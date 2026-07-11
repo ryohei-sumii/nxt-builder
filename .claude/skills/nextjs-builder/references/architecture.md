@@ -130,8 +130,10 @@ async function ProductList() {
 ## proxy (`proxy.ts`) — 旧 middleware
 
 - **Next.js 16 で `middleware.ts` は `proxy.ts` に改名**（エクスポート関数も `proxy`）。
-  `middleware.ts` は Edge 用途向けに残るが**非推奨**（将来削除）。移行 codemod:
-  `npx @next/codemod@canary middleware-to-proxy .`。
+  既存の `middleware.ts` は **Edge ランタイムで引き続き動作する**（非推奨警告が出るだけで、
+  ビルド/実行エラーにはならない。黙って停止するわけではない）が、将来削除予定。移行 codemod:
+  `npx @next/codemod@canary middleware-to-proxy .`。移行時はファイル名だけでなく
+  **エクスポート関数名も `proxy` に**し、認証ライブラリ側の設定も合わせる（下記の注意）。
 - ルート単位の**軽い**前処理（認証リダイレクト・i18n・セキュリティヘッダ付与）に使う。
   `export const config = { matcher: [...] }` で対象ルートを絞る（全リクエストに走らせない）。
 - **`proxy.ts` は Node.js ランタイムで動く（変更不可）**。旧 `middleware.ts` の Edge ランタイムとは

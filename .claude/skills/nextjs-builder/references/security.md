@@ -42,7 +42,9 @@ export async function deletePost(id: string) {
   過去に middleware を丸ごとスキップさせるバイパス（**CVE-2025-29927**, `x-middleware-subrequest`
   ヘッダ）があり、公式も認可判定は**データに近い層**で行うことを推奨している。proxy/middleware は
   「未ログインを弾く軽い一次ガード」に留め、本命の所有チェックはデータアクセス時に行う。
-  （Next 16 移行時、`middleware.ts` を残すと matcher が黙って無効化され認証が抜ける点にも注意。）
+  （Next 16 移行時、`middleware.ts` → `proxy.ts` の改名はファイル名だけでなく**エクスポート関数名も
+  `proxy` に**し、認証ライブラリの設定も合わせる。中途半端な移行で認証ガードが動かなくなる事故に注意。
+  なお旧 `middleware.ts` を残しても動作自体は継続する〔非推奨警告のみ〕。）
 
 ## 3. 秘密情報 / 環境変数
 

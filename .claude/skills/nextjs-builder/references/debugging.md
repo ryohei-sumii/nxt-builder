@@ -46,11 +46,13 @@
 - **修正**: `const { id } = await params` のように await する。型は
   `{ params: Promise<{ id: string }> }`。
 
-### middleware → proxy 改名で認証が無効化された（Next 16）
-- **原因**: Next 16 で `middleware.ts` は `proxy.ts`（関数名も `proxy`）に改名。旧 `middleware.ts` を
-  残したまま 16 に上げると **matcher が黙って走らなくなり、認証リダイレクトが効かなくなる**ことがある。
-- **修正**: `middleware.ts` → `proxy.ts`、export を `proxy` に。codemod:
-  `npx @next/codemod@canary middleware-to-proxy .`。proxy は Node ランタイムで動く点にも注意。
+### middleware → proxy 移行で認証が動かなくなった（Next 16）
+- **原因**: Next 16 で `middleware.ts` は `proxy.ts`（関数名も `proxy`）に改名。**旧 `middleware.ts` を
+  残しても動作自体は継続する**（Edge ランタイム・非推奨警告のみ／黙って停止はしない）。事故は主に
+  **移行を中途半端にやった時**に起きる — ファイル名だけ変えて export を `proxy` にし忘れる、
+  `config.matcher` を移し忘れる、next-intl / next-auth 等が新旧どちらのファイルを見るか噛み合わない、など。
+- **修正**: codemod で一括移行する: `npx @next/codemod@canary middleware-to-proxy .`。
+  ファイル名・export 名・matcher・認証ライブラリ設定を揃える。proxy は Node ランタイムで動く点にも注意。
 
 ### 動的レンダリング / キャッシュ未適用の切り替え
 - **原因（Next 16）**: デフォルトで動的（リクエスト時実行）。`cacheComponents` + `'use cache'` を
