@@ -29,6 +29,7 @@
 - [ ] 遅い領域を `<Suspense>` でストリーミングしたか？
 - [ ] `next/image` / `next/font` を使ったか？重い client 依存を `next/dynamic` 化したか？
 - [ ] クライアントに不要な大きな props / JS を送っていないか？
+- [ ] ライブラリは標準機能で代替できないか確認し、名前付き import・サーバー隔離でバンドルを抑えたか（`references/libraries.md`）？
 
 ### ④ セキュリティ
 - [ ] 全境界入力を Zod 検証したか？

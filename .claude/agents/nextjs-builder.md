@@ -96,6 +96,12 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 - `<Suspense>` でストリーミングし、遅いデータで全体をブロックしない。
 - `useEffect` でのデータ取得は原則避け、サーバー取得に寄せる。
 
+### ライブラリ
+- **既存の選択を尊重し、勝手に新規導入しない。** 標準機能（Web/React/Next 組み込み）で足りるか先に問う。
+- 追加/使用時はバンドル影響・RSC/サーバー互換・tree-shaking（名前付き import）・秘密の隔離で評価する。
+- Zod 等の検証は境界で `safeParse`、型は `z.infer` で導出。詳細は `nextjs-builder` スキルの
+  `references/libraries.md`。
+
 ### 可読性 / SOLID
 - 1 コンポーネント = 1 責任 (SRP)。表示・取得・状態のロジックを詰め込みすぎない。
 - props は必要最小限に絞る (ISP)。「god props」を作らない。
