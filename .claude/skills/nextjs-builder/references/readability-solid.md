@@ -52,14 +52,28 @@
 export interface PostRepository {
   list(): Promise<Post[]>
   byId(id: string): Promise<Post | null>
+  create(input: CreatePostInput): Promise<Post>
+  // 必要に応じて update / delete も同じ契約に含める
 }
 // 実装は差し替え可能（Prisma / Drizzle / 外部API / テスト用モック）
 export const posts: PostRepository = drizzlePostRepository
 ```
 
+## アクセシビリティ（UI を作るなら必須）
+
+- **セマンティック HTML を優先。** `div` に `onClick` を付けるより `<button>` / `<a>` /
+  `<label>` などネイティブ要素を使う（キーボード操作・フォーカス・ARIA が既定で付く）。
+- フォーム入力は `<label htmlFor>` で関連付ける（またはラベルで包む）。アイコンのみのボタンは
+  `aria-label` を付ける。
+- **キーボードだけで操作可能**に保ち、フォーカスが見える状態を維持する（`outline` を消さない）。
+- 開閉・モーダル・メニュー等のインタラクティブな Client Component には状態を ARIA に反映する
+  （`aria-expanded` / `role` / 必要ならフォーカストラップと Esc で閉じる）。
+- 画像は意味があれば `alt`、装飾なら `alt=""`。色だけで情報を伝えない。
+
 ## エラーハンドリング
 
 - `error.tsx`（`'use client'`）でルート単位のエラーバウンダリを提供し、リカバリ（`reset()`）を渡す。
+  root layout 自体のエラーは `global-error.tsx`（`'use client'`・`<html><body>` を自前描画）で捕捉する。
 - `not-found.tsx` と `notFound()` で 404 を適切に扱う。
 - Server Action は例外を投げるより、フォーム用途では `{ error }` を返して UI で表示する方が扱いやすい
   （用途で使い分ける）。

@@ -31,7 +31,8 @@ export default async function Page() {
 ## Server Actions (`'use server'`)
 
 - フォーム送信・ミューテーションのための**サーバー実行関数**。信頼境界であり、
-  **先頭で認可 → 入力検証（Zod）** を行う（`references/security.md`）。
+  **先頭で認証・認可 → 入力検証（Zod）** を行う（`references/security.md`）。
+  「ログイン済みか（認証）」と「その資源の持ち主か（認可・所有チェック）」は別物として両方確認する。
 - `revalidatePath` / `revalidateTag` でキャッシュを更新し、必要なら `redirect()` する。
 - 進捗/エラー UI は `useActionState`（React 19 / Next 15）または `useFormStatus` で扱う。
 
@@ -41,12 +42,13 @@ export default async function Page() {
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 const Schema = z.object({ title: z.string().min(1).max(200) })
 
 export async function createPost(_prev: unknown, formData: FormData) {
   const session = await auth()
-  if (!session) return { error: '認証が必要です' }        // 認可
+  if (!session) return { error: '認証が必要です' }        // 認証（ログイン済みか）
 
   const parsed = Schema.safeParse({ title: formData.get('title') })
   if (!parsed.success) return { error: '入力が不正です' }  // 検証
@@ -59,7 +61,7 @@ export async function createPost(_prev: unknown, formData: FormData) {
 
 ## Route Handlers (`app/**/route.ts`)
 
-- 外部公開 API・Webhook・非HTML応答に使う。**同じく先頭で認可＆検証。**
+- 外部公開 API・Webhook・非HTML応答に使う。**同じく先頭で認証・認可＆検証。**
 - `NextResponse` を使い、適切なステータス・キャッシュヘッダを返す。
 - ページ内のデータ取得のために Route Handler を経由**しない**（自分のサーバーに余計な HTTP を挟む
   だけ）。Server Component から直接データ層を呼ぶ。
@@ -87,9 +89,14 @@ export const getUser = cache(async (id: string) => db.user.findUnique({ where: {
 
 ## キャッシュ / 再検証（明示的に設計する）
 
-- `fetch(url, { next: { revalidate: 3600 } })` … 時間ベース ISR。
-- `fetch(url, { next: { tags: ['posts'] } })` + `revalidateTag('posts')` … タグ無効化。
-- `fetch(url, { cache: 'no-store' })` … 常に最新（キャッシュしない）。
+- **前提（Next.js 15）**: `fetch` のデフォルトは **uncached（毎回取得＝`no-store` 相当）**。
+  Next 14 以前の「デフォルトでキャッシュされる」挙動は逆転した。**キャッシュはオプトイン**する。
+- `fetch(url, { next: { revalidate: 3600 } })` … キャッシュを有効化しつつ時間ベース ISR。
+- `fetch(url, { cache: 'force-cache' })` … 恒久キャッシュ（明示的にキャッシュする）。
+- `fetch(url, { cache: 'force-cache', next: { tags: ['posts'] } })` + `revalidateTag('posts')`
+  … タグ無効化。**タグはキャッシュされたレスポンスにのみ効く**ため、キャッシュ有効化（`force-cache`
+  か `revalidate`）と併用しないと `revalidateTag` は無効。
+- 何も付けない `fetch(url)` … デフォルトで毎回取得（`no-store` 相当）。明示したいなら `{ cache: 'no-store' }`。
 - ミューテーション後は `revalidatePath` / `revalidateTag` で確実に反映する。
 - **「なぜこのキャッシュ戦略か」をコメントで残す。** 暗黙のキャッシュはバグの温床。
 
@@ -97,10 +104,24 @@ export const getUser = cache(async (id: string) => db.user.findUnique({ where: {
 
 - 予約ファイル: `page.tsx` / `layout.tsx` / `loading.tsx`（Suspense 境界）/ `error.tsx`
   （`'use client'` 必須のエラーバウンダリ）/ `not-found.tsx` / `route.ts` / `template.tsx`。
+- `global-error.tsx`（`'use client'` 必須）は **root layout 自体のエラー**を捕捉する特殊な境界で、
+  自前で `<html><body>` を描画する必要がある（通常の `error.tsx` は layout を置き換えない）。
 - グルーピング: `(group)` はURLに出ないグループ、`_folder` は除外、`[slug]` 動的、`[...slug]`
   キャッチオール、`@slot` パラレルルート。
 - `layout.tsx` は再レンダリングされない共有シェル。ページ固有の取得はページ側に置く。
 - SEO は `metadata` エクスポート / `generateMetadata` を使う（`<head>` を手書きしない）。
+  root layout に `metadata.metadataBase` を設定し、`openGraph`/`twitter` の相対URLを解決させる。
+  `app/sitemap.ts` / `app/robots.ts` / `app/opengraph-image.(tsx|png)` はファイル規約で自動配信される
+  （動的メタデータの完成例は `references/patterns.md`）。
+
+## middleware (`middleware.ts`)
+
+- ルート単位の**軽い**前処理（認証リダイレクト・i18n・セキュリティヘッダ付与）に使う。
+  `export const config = { matcher: [...] }` で対象ルートを絞る（全リクエストに走らせない）。
+- **Edge ランタイム**で動くため、Node 専用 API・重い処理・本命の DB 認可を置かない。
+  セッション cookie の有無など軽い判定に留める。
+- **認可の主機構にしない。** 本命の認可はデータに近い層（Server Action / Route Handler /
+  `lib/data/`）で行う（理由と既知の落とし穴は `references/security.md`）。
 
 ## ファイル構成の指針
 

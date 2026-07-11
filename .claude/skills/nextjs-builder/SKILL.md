@@ -20,7 +20,7 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
    種別ごとに進め方が変わる（下記「タスク種別ごとの進め方」）。
 2. **まず既存コードを調べる。** 何かを書く前に対象リポジトリの規約を把握する:
    - `package.json`（PM・Next バージョン・依存）, `tsconfig.json`, `next.config.*`, `app/` 構成,
-     `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn/ui）, `middleware.ts`。
+     `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn/ui）, `middleware.ts`, `README`。
    - 既存の PM（npm/pnpm/yarn/bun）・DB・認証・状態管理・スタイリングを**尊重**する。新規導入しない。
 3. **実装** は該当種別の手順と下記チェックリスト（`references/checklist.md`）を満たす。
 4. **セルフレビュー** — 5軸チェックリストで確認し、可能なら型チェック/リンタ/ビルド（あればテスト）を走らせる。
@@ -62,6 +62,7 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
   型の付け方 / エラーハンドリング。
 - **`references/debugging.md`** — バグ修正プロトコル + Next.js 頻出バグ診断カタログ
   （hydration mismatch / RSC 境界 / キャッシュ未更新 / `params` await 漏れ / 動的レンダリング等）。
+- **`references/testing.md`** — データ層/Server Action/Zod のユニットテストと E2E の方針（再発防止）。
 - **`references/checklist.md`** — 実装前・実装後に使う 5軸レビューチェックリスト。
 - **`references/patterns.md`** — 頻出タスクの完成コード例（フォーム+Server Action、
   並列データ取得ページ、認可付き Route Handler、Suspense ストリーミング等）。
@@ -69,7 +70,8 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
 ## 絶対に守る不変則（クイックリファレンス）
 
 - **Server Component をデフォルト**にし、`'use client'` は葉に押し下げる。
-- Server Action / Route Handler の**先頭で認可 → 入力を Zod 検証**。UIの出し分けは防御ではない。
+- Server Action / Route Handler の**先頭で認証・認可（所有チェック含む）→ 入力を Zod 検証**。
+  UIの出し分けは防御ではない。
 - クライアントに送ってよい環境変数は `NEXT_PUBLIC_` のみ。秘密モジュールに `import 'server-only'`。
 - `fetch` のキャッシュ挙動と `revalidate*` を**明示設計**する。曖昧なキャッシュを残さない。
 - データ取得は**並列化**（`Promise.all`）し、リクエスト重複は `React.cache`。

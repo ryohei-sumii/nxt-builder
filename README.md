@@ -20,8 +20,9 @@ Next.js (App Router + TypeScript) コードを扱う Claude Code エージェン
             ├── architecture.md    # App Router / RSC / Server Actions / キャッシュ設計
             ├── performance.md     # バンドル削減 / ストリーミング / 並列取得
             ├── security.md        # 入力検証 / 認可 / server-only / XSS・SSRF 対策
-            ├── readability-solid.md  # 命名 / 型 / SOLID の React 適用
+            ├── readability-solid.md  # 命名 / 型 / SOLID / アクセシビリティ
             ├── debugging.md       # バグ修正プロトコル + Next.js 頻出バグ診断カタログ
+            ├── testing.md         # データ層 / Server Action / Zod のテストと E2E 方針
             ├── checklist.md       # 実装前後の 5軸 + 種別別レビューチェックリスト
             └── patterns.md        # 頻出タスクの完成コード例
 ```

@@ -10,6 +10,7 @@
   必要になるまでロードしない。
 
 ```tsx
+'use client' // ← 重要: ssr:false は Client Component 内でのみ許可（後述）
 import dynamic from 'next/dynamic'
 // 初期表示に不要な重いエディタは遅延ロード（SSR不要なら ssr:false）
 const RichEditor = dynamic(() => import('@/components/rich-editor'), {
@@ -17,6 +18,11 @@ const RichEditor = dynamic(() => import('@/components/rich-editor'), {
   ssr: false,
 })
 ```
+
+> **Next.js 15 の制約**: Server Component 内で `next/dynamic` に `ssr: false` を指定すると
+> ビルドエラーになる（`ssr: false` は Client Component 専用）。本ガイドは「Server Component が
+> デフォルト」なので要注意。Server Component から client 専用の重い依存を遅延したい場合は、
+> `ssr: false` を含む**薄い Client ラッパー**を1枚挟むか、`ssr: false` を外す（SSR させる）。
 
 - 依存追加は慎重に。moment→date-fns/Temporal、lodash 全体import→個別import 等、
   バンドルへの影響を意識する。`@next/bundle-analyzer` で計測できることを覚えておく。

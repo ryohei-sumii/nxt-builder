@@ -29,7 +29,7 @@ export type FormState = { error?: string; ok?: boolean }
 
 export async function createPost(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await auth()
-  if (!session) return { error: 'ログインが必要です' }               // 認可
+  if (!session) return { error: 'ログインが必要です' }               // 認証（ログイン済みか）
 
   const parsed = CreatePostSchema.safeParse({
     title: formData.get('title'),
@@ -74,11 +74,12 @@ export function NewPostForm() {
 ## 2. 並列データ取得ページ（ウォーターフォール回避 + Suspense）
 
 ```tsx
-// app/dashboard/page.tsx  (Server Component)
+// app/dashboard/[id]/page.tsx  (Server Component) — 動的セグメント [id] とパスを一致させる
 import { Suspense } from 'react'
 import { getUser } from '@/lib/data/users'      // React.cache でラップ済み
 import { RecentOrders } from './recent-orders'
 
+// Next 15: params は Promise。ファイルパスに [id] が無いと id は undefined になる
 export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await getUser(id)                 // 速い取得は待つ
@@ -95,7 +96,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
 ```
 
 ```tsx
-// app/dashboard/recent-orders.tsx  (Server Component)
+// app/dashboard/[id]/recent-orders.tsx  (Server Component)
 import { getOrders, getRecommendations } from '@/lib/data/orders'
 
 export async function RecentOrders({ userId }: { userId: string }) {
@@ -161,9 +162,11 @@ export default async function Page() {
   const article = await getArticle()
   return (
     <Collapsible title={article.title}>
-      {/* children はサーバーで描画され、クライアント JS に乗らない */}
-      <article dangerouslySetInnerHTML={undefined /* 例: 生HTMLは避け、構造化して描画 */} />
-      <p>{article.body}</p>
+      {/* children はサーバーで描画され、クライアント JS に乗らない。
+          生HTMLは避け、構造化して描画する（dangerouslySetInnerHTML は使わない） */}
+      <article>
+        <p>{article.body}</p>
+      </article>
     </Collapsible>
   )
 }
@@ -189,17 +192,93 @@ export function Collapsible({ title, children }: { title: string; children: Reac
 
 ## 5. 環境変数の検証（起動時に欠落検知）
 
+`server-only` を付けたモジュールはクライアントから import できない。そのため
+**サーバー専用の秘密**と**クライアント公開値（`NEXT_PUBLIC_`）は別モジュールに分ける**。
+
 ```ts
-// lib/env.ts
+// lib/env.server.ts — サーバー専用（秘密を含む）。クライアントから import 不可
 import 'server-only'
 import { z } from 'zod'
 
-const EnvSchema = z.object({
+const ServerEnv = z.object({
   DATABASE_URL: z.string().url(),
   AUTH_SECRET: z.string().min(32),
-  // クライアントに出すものだけ NEXT_PUBLIC_ を付ける
-  NEXT_PUBLIC_APP_URL: z.string().url(),
 })
 
-export const env = EnvSchema.parse(process.env)   // 不足なら起動時に例外
+export const serverEnv = ServerEnv.parse(process.env)   // 不足なら起動時に例外
 ```
+
+```ts
+// lib/env.public.ts — クライアントでも参照可（NEXT_PUBLIC_ のみ）
+import { z } from 'zod'
+
+// NEXT_PUBLIC_* はビルド時にインライン化されるため、個別に参照する
+const PublicEnv = z.object({ NEXT_PUBLIC_APP_URL: z.string().url() })
+
+export const publicEnv = PublicEnv.parse({
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+})
+```
+
+> 型安全に一括管理したい場合は `@t3-oss/env-nextjs` の利用も検討（server/client を型で分離）。
+
+---
+
+## 6. 動的メタデータ（generateMetadata + React.cache で重複排除）
+
+```tsx
+// app/posts/[id]/page.tsx
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getPost } from '@/lib/data/posts'   // React.cache 済み → ページ本体と取得を共有
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Metadata> {
+  const { id } = await params
+  const post = await getPost(id)             // cache 済みなので本体と重複取得にならない
+  if (!post) return {}
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: { title: post.title, description: post.excerpt },
+  }
+}
+
+export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const post = await getPost(id)
+  if (!post) notFound()
+  return <article><h1>{post.title}</h1><p>{post.body}</p></article>
+}
+```
+
+（`metadataBase` は root layout の `metadata` に設定し、相対URLの OG 画像を解決させる。）
+
+---
+
+## 7. エラーバウンダリ（error.tsx / global-error.tsx）
+
+```tsx
+// app/posts/error.tsx  (Client Component 必須)
+'use client'
+
+// 本番はエラー詳細を画面に出さない。reset() で再試行のみ提供する
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    <div role="alert">
+      <p>問題が発生しました。</p>
+      <button onClick={reset}>再試行</button>
+    </div>
+  )
+}
+```
+
+`app/global-error.tsx` は root layout 自体のエラーを捕捉する特殊版で、`'use client'` かつ
+自前で `<html><body>` を描画する（`return <html><body>…</body></html>`）。
