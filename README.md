@@ -37,6 +37,20 @@ Next.js (App Router + TypeScript) コードを扱う Claude Code エージェン
 - **スキル** (`.claude/skills/nextjs-builder/`): 5軸の詳細な知識ベースとチェックリスト。
   エージェントおよびメインの Claude が、複雑な実装時に該当リファレンスを参照します。
 
+> **導入は `.claude/` を置くだけ**（マークダウンのみ・インストール不要）。リポジトリ直下の
+> `verification/` は**保守側の QA ハーネス**で、配布・利用には不要です（下記）。
+
+## 品質の担保（`verification/`）
+
+スキルが示すコードパターンを、**実ビルド可能な Next.js 16 アプリ**に組んで機械的に検証しています。
+
+```bash
+cd verification && bash run.sh   # next build（面の通し検証）+ tsc --strict + vitest（実行時挙動）
+```
+
+`references/*` のコード例を変えたら `verification/app` / `verification/runtime` に反映して緑にしてから
+コミットする運用です。典型依頼の期待は `verification/eval-set.md`（回帰ルーブリック）にまとめています。
+
 ## 使い方
 
 このリポジトリ（または `.claude/` をコピーした任意のプロジェクト）を Claude Code で開き、

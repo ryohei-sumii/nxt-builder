@@ -1,0 +1,24 @@
+{
+  "name": "nextjs-builder-verification",
+  "private": true,
+  "description": "Maintainer-only harness: builds the skill's code patterns as a real Next 16 app and locks runtime-sensitive behavior. NOT part of the shipped .claude/ agent.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "next build",
+    "test": "vitest run runtime"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "server-only": "^0.0.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

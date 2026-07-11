@@ -30,8 +30,16 @@
         ├── cloud-webhooks.md         # Webhook 署名検証 + クラウド(AWS/GCP)連携
         ├── checklist.md              # 実装前後の 5軸 + 種別別チェックリスト
         └── patterns.md               # 完成コード例（フォーム/並列取得/RouteHandler/donut/metadata 等）
+verification/                         # メンテナ用の通し検証ハーネス（配布物ではない・node_modules 非コミット）
+├── app/ lib/ components/             # SKILL の代表パターンを組んだ実ビルド可能な Next 16 アプリ
+├── runtime/                          # vitest: zod フットガン等の実行時挙動を固定
+├── eval-set.md                       # 典型依頼10件 × 満たすべき不変条件（回帰ルーブリック）
+└── run.sh                            # install → next build → tsc --strict → vitest
 README.md                             # 構成と使い方
 ```
+
+> `.claude/` は配布物でマークダウンのみ。`verification/` はそれとは独立した**保守側の QA ツール**で、
+> エージェントの動作には不要（対象プロジェクトへ置くのは `.claude/` だけ）。
 
 ## 対象バージョンの前提（重要）
 
@@ -55,9 +63,11 @@ README.md                             # 構成と使い方
 
 ## 作業の作法（このリポジトリを編集するとき）
 
-- **コード例を追加/変更したら実コンパイルで裏取りする。** スクラッチパッドに実プロジェクト
-  （Next 16 / React 19 / zod 4 / vitest）を作り `tsc --noEmit --strict` を通してから記述する
-  （過去ラウンドでこの基準を確立。目視や記憶で断定しない）。
+- **コード例を追加/変更したら実コンパイルで裏取りする。** これは `verification/` ハーネスに機械化した:
+  `cd verification && bash run.sh` で **`next build`（面の通し検証）＋ `tsc --strict` ＋ vitest（zod 等の
+  実行時フットガン）** を回す（ピン留め: Next 16.2.10 / React 19.2.7 / zod 4.4.3。`node_modules` は非コミット）。
+  `references/*` のコード例を変えたら対応を `verification/app` か `verification/runtime` に反映し、緑にしてから
+  コミットする。目視や記憶で断定しない。典型依頼の期待は `verification/eval-set.md`（回帰ルーブリック）。
 - ドキュメントは日本語。5軸のトーンと既存の見出し構成に合わせる。
 - 個別ドメインの無限追加は避ける。代表例＋一般手順で汎化するのが本方針
   （ユーザーの「個別最適化はキリがない」という判断に沿う）。
@@ -76,6 +86,11 @@ README.md                             # 構成と使い方
   Stripe 特定の webhook 例を汎用化＋公式 verifier 注記、presigned に allowlist/サイズ強制を追加。
 - 全コードスニペットを実 Next 16.2.10 / React 19.2.7 / zod 4.4.3 / vitest で tsc 検証済み
   （ラウンド7の `z.stringbool` / presigned enum も zod 4.4.3 + tsc --strict で裏取り）。
+- ラウンド8で品質プロセスを"面"に強化: (1)`verification/` ハーネスを新設し、代表パターンを**実ビルド可能な
+  Next 16 アプリ**に組んで `next build`＋`tsc --strict`＋vitest を1コマンド（`run.sh`）で回せるようにした
+  （スニペット単位の ad hoc 検証を機械化・回帰化。zod の実行時フットガンも固定）。(2)エージェント本体の
+  自己検証を「可能なら」から**完了条件（緑になるまで完了としない／回せない時は未検証と明示）**へ格上げ。
+  (3)`eval-set.md`（典型依頼10件の不変条件）を回帰ルーブリックとして追加。
 
 ## Git / ブランチ
 
