@@ -52,7 +52,7 @@
 export interface PostRepository {
   list(): Promise<Post[]>
   byId(id: string): Promise<Post | null>
-  create(input: CreatePostInput): Promise<Post>
+  create(input: CreatePostData): Promise<Post>   // = CreatePostInput & { authorId }（永続化ペイロード）
   // 必要に応じて update / delete も同じ契約に含める
 }
 // 実装は差し替え可能（Prisma / Drizzle / 外部API / テスト用モック）

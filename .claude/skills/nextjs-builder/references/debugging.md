@@ -59,13 +59,15 @@
   閉じ込め `<Suspense>` で切り分ける。ビルド出力でレンダリング種別を確認する。
 
 ### `revalidatePath`/`redirect` が効かない・例外になる
-- `redirect()` は内部的に例外を投げて制御を返すため、**`try/catch` の中で呼ぶと握りつぶされる**。
-  catch の外で呼ぶか、catch で `isRedirectError` を再スローする。
+- `redirect()` / `notFound()` は内部的に例外を投げて制御を返すため、**`try/catch` の中で呼ぶと
+  握りつぶされる**。**`try/catch` の外で呼ぶ**のが原則（内部 API の `isRedirectError` に依存しない。
+  これは安定した公開エクスポートではなくバージョン間で移動・改名されうる）。
 
 ### 環境変数が `undefined`
 - クライアント側で参照しているのに `NEXT_PUBLIC_` が付いていない → サーバー限定のため `undefined`。
 - ビルド時に埋め込まれるため、`.env` 変更後は再ビルド/再起動が必要。
-- `lib/env.ts` で起動時にスキーマ検証しておくと早期に検知できる（`references/patterns.md` 参照）。
+- `lib/env.server.ts`（秘密）/ `lib/env.public.ts`（`NEXT_PUBLIC_`）で起動時にスキーマ検証しておくと
+  早期に検知できる（server/public 分割の完成例は `references/patterns.md` セクション5）。
 
 ### `Image` / `fetch` 実行時エラー
 - **`next/image` の "hostname not configured"**: `next.config` の `images.remotePatterns` に

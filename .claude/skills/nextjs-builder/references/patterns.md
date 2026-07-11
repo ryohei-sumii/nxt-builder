@@ -14,7 +14,10 @@ export const CreatePostSchema = z.object({
   title: z.string().min(1, 'タイトルは必須です').max(200),
   body: z.string().min(1).max(10_000),
 })
-export type CreatePostInput = z.infer<typeof CreatePostSchema>
+export type CreatePostInput = z.infer<typeof CreatePostSchema>       // フォーム入力（title/body のみ）
+
+// 永続化ペイロード = フォーム入力 + サーバー由来の値（authorId はセッションから。フォームから受けない）
+export type CreatePostData = CreatePostInput & { authorId: string }
 ```
 
 ```ts
@@ -76,6 +79,7 @@ export function NewPostForm() {
 ```tsx
 // app/dashboard/[id]/page.tsx  (Server Component) — 動的セグメント [id] とパスを一致させる
 import { Suspense } from 'react'
+import { notFound } from 'next/navigation'
 import { getUser } from '@/lib/data/users'      // React.cache でラップ済み
 import { RecentOrders } from './recent-orders'
 
@@ -83,6 +87,7 @@ import { RecentOrders } from './recent-orders'
 export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await getUser(id)                 // 速い取得は待つ
+  if (!user) notFound()                          // 見つからなければ 404（500 ではなく）
   return (
     <main>
       <h1>{user.name} さんのダッシュボード</h1>
@@ -117,10 +122,9 @@ import { cache } from 'react'
 import 'server-only'                              // クライアント誤importを防ぐ
 import { db } from '@/lib/db'
 
+// 「見つからない」は null で返し、404 にするか否かは呼び出し側に委ねる（DIP・下記ページで notFound()）
 export const getUser = cache(async (id: string) => {
-  const user = await db.user.findUnique({ where: { id }, select: { id: true, name: true } })
-  if (!user) throw new Error('not found')
-  return user
+  return db.user.findUnique({ where: { id }, select: { id: true, name: true } }) // 必要な列のみ select
 })
 ```
 

@@ -84,7 +84,9 @@ const [user, posts] = await Promise.all([getUser(id), getPosts(id)])
 
 ```tsx
 import { cache } from 'react'
-export const getUser = cache(async (id: string) => db.user.findUnique({ where: { id } }))
+// 表示に必要な列のみ select する（DB レコード丸ごとは RSC ペイロードで露出しうる。security.md 3.5 参照）
+export const getUser = cache((id: string) =>
+  db.user.findUnique({ where: { id }, select: { id: true, name: true } }))
 ```
 
 ## キャッシュ / 再検証（明示的に設計する）
