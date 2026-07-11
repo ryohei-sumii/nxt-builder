@@ -11,7 +11,8 @@ Next.js の攻撃面は主に **信頼境界**（Server Action / Route Handler /
 
 ```ts
 import { z } from 'zod'
-const Body = z.object({ email: z.string().email(), age: z.coerce.number().int().min(0).max(150) })
+// Zod 4 では書式は top-level が推奨: z.email() / z.url()（旧 z.string().email() 等も動作）
+const Body = z.object({ email: z.email(), age: z.coerce.number().int().min(0).max(150) })
 
 export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json())

@@ -216,7 +216,7 @@ import 'server-only'
 import { z } from 'zod'
 
 const ServerEnv = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),          // Zod 4 推奨形（旧 z.string().url() も動作）
   AUTH_SECRET: z.string().min(32),
 })
 
@@ -228,7 +228,7 @@ export const serverEnv = ServerEnv.parse(process.env)   // 不足なら起動時
 import { z } from 'zod'
 
 // NEXT_PUBLIC_* はビルド時にインライン化されるため、個別に参照する
-const PublicEnv = z.object({ NEXT_PUBLIC_APP_URL: z.string().url() })
+const PublicEnv = z.object({ NEXT_PUBLIC_APP_URL: z.url() })
 
 export const publicEnv = PublicEnv.parse({
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
