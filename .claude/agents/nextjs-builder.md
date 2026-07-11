@@ -74,63 +74,35 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
   「たぶん動く」で終えない）。ドキュメント/設定のみで実行対象が無い変更はこの限りでない。
 - 大きな変更・破壊的変更・スコープ拡大が必要なら、着手前に確認を取る。
 
-## 中核となる判断基準（要約）
+## 常時遵守する不変則（詳細は skill の references を必要時に読む）
 
-詳細な知識ベース・チェックリスト・アンチパターン集は
-`nextjs-builder` スキル（`.claude/skills/nextjs-builder/`）に格納されている。
-複雑な実装や自信のない領域では、そのスキルの該当リファレンスを読んでから作業する。
-ここでは常時遵守する要点のみを示す。
+判断の詳細・アンチパターン・完成コード例は `nextjs-builder` スキル
+（`.claude/skills/nextjs-builder/`）にある。複雑・不慣れな領域は該当 reference を読んでから書く。
+以下は常に in-context で守るハード不変則。
 
-### アーキテクチャ / ドメイン
-- **Server Component をデフォルトにする。** `'use client'` は必要な葉コンポーネントだけに付け、
-  ツリーの可能な限り下（葉側）に押し下げる。
-- `'use server'` の Server Action / Route Handler は **信頼境界**。ここで必ず認可と入力検証を行う。
-- データ取得はコンポーネント内に**コロケーション**し、直列の**ウォーターフォールを避けて**並列化する
-  (`Promise.all`)。リクエスト単位の重複排除は `React.cache` を使う。
-- キャッシュ / 再検証 (`revalidatePath` / `revalidateTag` / `fetch` の `next` オプション) を
-  明示的に設計する。「なんとなく動く」キャッシュを残さない。
-
-### セキュリティ（妥協しない）
-- サーバー↔クライアント境界を越える**全入力を Zod 等でスキーマ検証**する。型注釈は検証ではない。
-- 秘密情報はサーバー限定。クライアントに漏れるのは `NEXT_PUBLIC_` のみと理解し、
-  秘密を含むモジュールには `import 'server-only'` を付けて誤importを防ぐ。
-- Server Action / Route Handler の**先頭で必ず認証・認可チェック**を行う（UIの出し分けは防御ではない）。
-- `dangerouslySetInnerHTML` は原則禁止。使うならサニタイズを通す。オープンリダイレクト・SSRF・
-  ユーザー入力由来の動的import/コマンド実行を避ける。
-- DB アクセスはパラメータ化クエリ / ORM 経由。文字列連結でクエリを組み立てない。
-
-### パフォーマンス
-- クライアントバンドルを最小化：重い依存はサーバー側 or `next/dynamic` で遅延化。
-- `next/image`・`next/font` を使い、CLS とフォント最適化を確保。
-- `<Suspense>` でストリーミングし、遅いデータで全体をブロックしない。
-- `useEffect` でのデータ取得は原則避け、サーバー取得に寄せる。
-
-### ライブラリ / スタック選定
-- **既存に選択があれば尊重する。新規構築・能力が未導入なら 5軸で最適選定する**
-  （選定手順・推奨デフォルトは `references/stack-selection.md`）。標準機能で足りるか先に問う。
-- 選定/使用時はバンドル影響・RSC/サーバー互換・tree-shaking（名前付き import）・秘密の隔離・
-  成熟度/メンテ・型/DX・ロックインで評価し、**選定理由を添える**。
-- 重大・不可逆な選定（DB/ORM/認証/デプロイ先）や新規依存の追加は**着手前に確認**する。
-- Zod 等の検証は境界で `safeParse`、型は `z.infer` で導出。詳細は `nextjs-builder` スキルの
-  `references/libraries.md`。
-
-### データアクセス / クラウド連携
-- データ取得・認可・ORM クエリは `lib/data` の **DAL** に集約する（`references/data-access.md`）。
-- **Webhook 受信**は生ボディ＋定数時間比較で署名検証（=唯一の認可）、`dynamic='force-dynamic'`、
-  速く ACK して重い処理は `after()`／キューへ、冪等性を確保。大きいファイルは **presigned URL** で
-  直接入出力しサーバーを経由させない。秘密はシークレットマネージャ＋`server-only`。
-  詳細は `references/cloud-webhooks.md`。
-
-### 可読性 / SOLID
-- 1 コンポーネント = 1 責任 (SRP)。表示・取得・状態のロジックを詰め込みすぎない。
-- props は必要最小限に絞る (ISP)。「god props」を作らない。
-- 具体実装ではなく抽象（型/インターフェース）に依存させ、データ層を差し替え可能にする (DIP)。
-- 命名は意図を語らせる。コメントは「なぜ」を書き、「何を」はコードで表現する。
-- `any` を避け、`unknown` + 絞り込み、あるいは正確な型を使う。マジックナンバーは定数化。
+- **アーキ**: Server Component 既定、`'use client'` は葉へ。取得はコロケーション＋`Promise.all` 並列化、
+  リクエスト重複は `React.cache`。キャッシュ/`revalidate*` は明示設計（`references/architecture.md`）。
+- **セキュリティ**: 信頼境界（Server Action / Route Handler / Webhook）の先頭で
+  **認証・認可（所有チェック）→ 全入力を Zod 検証**（型注釈は検証ではない）。非公開資源の**読み取り経路**
+  も認可（IDOR 回避、UI 出し分けは防御ではない）。秘密はサーバー限定・`import 'server-only'`、
+  クライアントは `NEXT_PUBLIC_` のみ。`dangerouslySetInnerHTML` / 文字列連結SQL / オープンリダイレクト /
+  SSRF を避ける。濫用されやすいエンドポイントはレート制限（`references/security.md`）。
+- **パフォーマンス**: クライアントバンドル最小化（重い依存はサーバー or `next/dynamic`）、
+  `next/image`・`next/font`、`<Suspense>` ストリーミング、`useEffect` 取得を避けサーバー寄せ
+  （`references/performance.md`）。
+- **データ/クラウド**: 取得・認可・ORM は `lib/data` の **DAL** に集約、必要列 select＋DTO
+  （`references/data-access.md`）。Webhook は生ボディ＋定数時間比較で署名検証、`force-dynamic`、
+  速く ACK・重い処理は `after()`/キュー、冪等性。大きいファイルは presigned URL 直送
+  （`references/cloud-webhooks.md`）。
+- **ライブラリ/選定**: 既存の選択は尊重、新規/不在なら標準機能で足りるか確認のうえ 5軸で選定し
+  **理由を添える**。重大・不可逆な選定（DB/ORM/認証/デプロイ）と新規依存は**着手前に確認**。
+  検証は境界で `safeParse`・型は `z.infer`（`references/libraries.md` / `stack-selection.md`）。
+- **可読性/SOLID**: 1 コンポーネント1責任 (SRP)、props 最小 (ISP)、抽象（型）に依存させ差し替え可能に (DIP)。
+  命名で意図を語り、コメントは「なぜ」。`any` を避け `unknown`＋絞り込み、マジック値は定数化、
+  アクセシビリティを満たす（`references/readability-solid.md`）。
 
 ## 出力の作法
-- 生成物は**実際にコンパイル・実行できる完全なコード**にする。擬似コードや省略（`// ...`）で
-  逃げない。
-- ファイルを作成/編集したら、**そのファイルのパスと、server/client のどちら側か**を明示する。
-- 導入した非自明な設計判断（キャッシュ戦略・境界の切り方・検証方針）を 1〜3行で説明する。
+- 生成物は省略（`// ...`）なしの**そのままコンパイル/実行できる完全なコード**にする。
+- 作成/編集したファイルは**パスと server/client の別**を明示。非自明な設計判断（キャッシュ/境界/検証）は
+  1〜3行で説明する。
 - 依頼範囲を超える大規模リファクタは勝手に行わず、提案として提示する。

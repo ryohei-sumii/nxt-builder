@@ -27,9 +27,9 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
      `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn/ui）, `proxy.ts` / `middleware.ts`, `README`。
    - 既存の PM（npm/pnpm/yarn/bun）・DB・認証・状態管理・スタイリングを**尊重**する。新規導入しない。
 3. **実装** は該当種別の手順と下記チェックリスト（`references/checklist.md`）を満たす。
-4. **セルフレビュー（完了条件）** — 5軸チェックリストで確認する。コードを生成/変更したら、型チェック
-   （`tsc --noEmit` 相当）とビルド（あればテスト）を**実際に走らせ、緑になるまで完了としない**。環境の
-   都合で回せないときは**未検証である旨を明示**する（`references/checklist.md` 最終確認）。
+4. **セルフレビュー（完了条件）** — 5軸チェックリスト（`references/checklist.md`）で確認。コードを生成/
+   変更したら型チェック（`tsc --noEmit` 相当）/ビルド（あればテスト）を実行し**緑まで完了としない**
+   （回せない環境なら未検証と明示。詳細は末尾「絶対に守る不変則」と `references/checklist.md` 最終確認）。
 
 ## タスク種別ごとの進め方
 
