@@ -150,4 +150,5 @@ async function ProductList() {
 
 - ルート直下ではなく `app/` にルーティング、再利用ロジックは `lib/`・UIは `components/` などに分離。
 - **1ファイル1責任**を意識し、肥大化した `page.tsx` はコンポーネント/フックに分割。
-- データアクセスは `lib/data/` 等に集約し、UIから DB クライアントを直接触らせない（DIP・後述）。
+- データアクセスは `lib/data/` の**データアクセス層 (DAL)** に集約し、UIから DB クライアントを
+  直接触らせない（認可の集約・ORM 最適化・DTO 化は `references/data-access.md`）。

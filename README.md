@@ -25,6 +25,7 @@ Next.js (App Router + TypeScript) コードを扱う Claude Code エージェン
             ├── debugging.md       # バグ修正プロトコル + Next.js 頻出バグ診断カタログ
             ├── testing.md         # データ層 / Server Action / Zod のテストと E2E 方針
             ├── libraries.md       # ライブラリ選定・使用の最適化（Zod 深掘り / カテゴリ別指針）
+            ├── data-access.md     # データアクセス層(DAL): 認可集約 / ORM クエリ最適化 / DTO
             ├── checklist.md       # 実装前後の 5軸 + 種別別レビューチェックリスト
             └── patterns.md        # 頻出タスクの完成コード例
 ```
