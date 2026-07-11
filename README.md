@@ -25,6 +25,7 @@ Next.js (App Router + TypeScript) コードを扱う Claude Code エージェン
             ├── debugging.md       # バグ修正プロトコル + Next.js 頻出バグ診断カタログ
             ├── testing.md         # データ層 / Server Action / Zod のテストと E2E 方針
             ├── libraries.md       # ライブラリ選定・使用の最適化（Zod 深掘り / カテゴリ別指針）
+            ├── stack-selection.md # 要件/設計からの実装: スタック選定フレーム / 推奨デフォルト
             ├── data-access.md     # データアクセス層(DAL): 認可集約 / ORM クエリ最適化 / DTO
             ├── cloud-webhooks.md  # Webhook 受信/送信 + クラウド(AWS/GCP)連携の最適化
             ├── checklist.md       # 実装前後の 5軸 + 種別別レビューチェックリスト
@@ -42,10 +43,14 @@ Next.js (App Router + TypeScript) コードを扱う Claude Code エージェン
 次のように依頼するだけです。
 
 - **新規作成**: 「App Router で、認可付きの投稿作成フォームを Server Action で作って」
+- **要件から実装（選定込み）**: 「この要件で SaaS のダッシュボードを作って。ORM や認証も最適なものを選んで」
 - **機能追加**: 「この一覧ページにページネーションを追加して」
 - **リファクタリング**: 「このページの Client Component を減らしてバンドルを軽くして」
 - **バグ修正**: 「hydration mismatch のエラーが出る。原因を特定して直して」
 - **レビュー**: 「この Route Handler をセキュリティ観点でレビューして」
+
+要件から実装するときは、既存スタックがあれば尊重し、無い/新規なら**5軸で最適なライブラリ・スタックを
+選定**して数行で決定を宣言します（DB/ORM/認証などの重大な選定は着手前に確認）。
 
 エージェントはまずタスク種別を見極め、実装前に既存の規約（パッケージマネージャ・Next.js
 バージョン・DB・認証・スタイリング・ESLint 設定）を調べ、それに合わせて作業します。
