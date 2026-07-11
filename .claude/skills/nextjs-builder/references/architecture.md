@@ -102,11 +102,16 @@ export const getUser = cache((id: string) =>
 // キャッシュしたい単位の先頭に付ける
 async function ProductList() {
   'use cache'
+  // 注: この境界内で cookies()/headers() を読むとエラー。リクエスト依存値は引数で渡す
   const products = await db.product.findMany()
   return <ul>{products.map((p) => <li key={p.id}>{p.name}</li>)}</ul>
 }
 ```
 
+- **`'use cache'` 境界内は「リクエスト非依存」でなければならない**: 内側では
+  `cookies()` / `headers()` / `searchParams` / uncached fetch など**動的（リクエスト時）API を呼べない**
+  （呼ぶとエラー `Cannot access 'cookies()' in 'use cache'`）。リクエスト依存値は**境界の外で取得して
+  引数で渡す**（引数がキャッシュキーの一部になる）。ユーザー/セッション固有データはキャッシュ対象にしない。
 - **fetch 単位の制御**: `fetch(url, { cache: 'force-cache' })` で明示キャッシュ、
   `{ next: { revalidate: 3600 } }` で時間ベース再検証、`{ next: { tags: ['posts'] } }` で
   タグ付け（**タグはキャッシュされたレスポンスにのみ効く**ため、キャッシュ有効化と併用する）。

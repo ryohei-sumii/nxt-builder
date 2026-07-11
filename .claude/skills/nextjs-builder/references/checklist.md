@@ -33,6 +33,7 @@
 ### ④ セキュリティ
 - [ ] 全境界入力を Zod 検証したか？
 - [ ] Server Action / Route Handler の先頭で認証・認可（所有チェック含む）したか？
+- [ ] 非公開資源を表示する**読み取り経路**（Server Component / `lib/data`）でも認証＋所有/可視性チェックをしたか（IDOR 回避）？
 - [ ] 秘密がクライアントに漏れていないか？秘密モジュールに `server-only` を付けたか？
 - [ ] Client Component / RSC に渡す props を必要フィールドのみに絞ったか（DB オブジェクト丸ごとを渡していないか）？
 - [ ] `dangerouslySetInnerHTML` / 文字列連結SQL / オープンリダイレクト / SSRF を避けたか？

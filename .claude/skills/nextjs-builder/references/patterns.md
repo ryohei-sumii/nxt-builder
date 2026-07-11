@@ -72,6 +72,12 @@ export function NewPostForm() {
 }
 ```
 
+> **per-id アクション（一覧の削除/編集ボタン）を form に渡すとき**、`action` に渡した関数の第1引数は
+> 必ず `FormData` になる。特定 id を渡すには `action={deletePost.bind(null, post.id)}`（推奨）か、
+> `<input type="hidden" name="id" value={post.id} />` を置いてアクション側で `formData.get('id')` を
+> Zod 検証して読む。`(id: string)` 署名の関数を `action={deletePost}` に直接渡すと id の位置に FormData が
+> 入る（TS では型エラー）。アクション先頭での認証＋所有チェックは `references/security.md`。
+
 ---
 
 ## 2. 並列データ取得ページ（ウォーターフォール回避 + Suspense）
@@ -79,13 +85,18 @@ export function NewPostForm() {
 ```tsx
 // app/dashboard/[id]/page.tsx  (Server Component) — 動的セグメント [id] とパスを一致させる
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
 import { getUser } from '@/lib/data/users'      // React.cache でラップ済み
 import { RecentOrders } from './recent-orders'
 
 // Next 16: params は Promise（同期アクセス不可）。ファイルパスに [id] が無いと id は undefined になる
 export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  // 読み取り経路でも認証＋所有チェックは必須。個人資源を任意の id で覗ける IDOR を防ぐ
+  const session = await auth()
+  if (!session) redirect('/login')               // 認証
+  if (session.userId !== id) notFound()           // 認可（他人の資源を覗かせない）
   const user = await getUser(id)                 // 速い取得は待つ
   if (!user) notFound()                          // 見つからなければ 404（500 ではなく）
   return (

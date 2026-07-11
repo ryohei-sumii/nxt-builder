@@ -23,7 +23,9 @@ export async function POST(req: Request) {
 ## 2. 認証・認可 — 各エントリの先頭で
 
 - **Server Action / Route Handler の1行目で**セッション取得→認可判定を行う。
-- **UIの出し分けは防御ではない。** ボタンを隠しても API は叩ける。サーバーで必ず権限を確認する。
+- **読み取り経路も同じ。** 非公開資源を返す **Server Component / `lib/data` のデータ取得**でも、
+  先頭で認証＋所有/可視性チェックを行う。他人の `id` を URL に渡して覗ける **IDOR**（読み取りの
+  アクセス制御欠落）は典型脆弱性。URL が見えない・UIで出さないことは防御ではない。
 - リソース単位の所有チェックを忘れない（「ログイン済み」だけでなく「この行の持ち主か」）。
 
 ```ts
@@ -35,6 +37,9 @@ export async function deletePost(id: string) {
   if (post?.userId !== session.userId) throw new Error('forbidden')  // 認可（所有）
   await db.post.delete({ where: { id } })
 }
+// ※ この deletePost(id) を form から起動する場合、action={deletePost} に直接渡すと第1引数が
+//   FormData になる。action={deletePost.bind(null, post.id)} で id を束縛するか、hidden input +
+//   formData 読み取り + Zod 検証を使う（references/patterns.md セクション1）。
 ```
 
 - `proxy.ts`（Next 16 で `middleware.ts` から改名。Node ランタイム）はルート単位の粗いガードには
