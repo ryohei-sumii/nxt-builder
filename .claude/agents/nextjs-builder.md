@@ -102,6 +102,13 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 - Zod 等の検証は境界で `safeParse`、型は `z.infer` で導出。詳細は `nextjs-builder` スキルの
   `references/libraries.md`。
 
+### データアクセス / クラウド連携
+- データ取得・認可・ORM クエリは `lib/data` の **DAL** に集約する（`references/data-access.md`）。
+- **Webhook 受信**は生ボディ＋定数時間比較で署名検証（=唯一の認可）、`dynamic='force-dynamic'`、
+  速く ACK して重い処理は `after()`／キューへ、冪等性を確保。大きいファイルは **presigned URL** で
+  直接入出力しサーバーを経由させない。秘密はシークレットマネージャ＋`server-only`。
+  詳細は `references/cloud-webhooks.md`。
+
 ### 可読性 / SOLID
 - 1 コンポーネント = 1 責任 (SRP)。表示・取得・状態のロジックを詰め込みすぎない。
 - props は必要最小限に絞る (ISP)。「god props」を作らない。

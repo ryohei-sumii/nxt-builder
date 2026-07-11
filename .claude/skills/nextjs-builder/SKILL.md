@@ -71,6 +71,8 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
   カテゴリ別指針、バンドル/RSC/セキュリティ観点、アンチパターン）。
 - **`references/data-access.md`** — データアクセス層 (DAL) パターン。認証・所有/ロール認可の集約、
   ORM クエリ最適化（select/N+1/ページング/トランザクション/接続）、DTO 化。
+- **`references/cloud-webhooks.md`** — Webhook 受信/送信とクラウド（AWS/GCP 等）連携の最適化。
+  署名検証・生ボディ・冪等性・`after()`/キュー・presigned URL・シークレット管理・ランタイム選択。
 - **`references/checklist.md`** — 実装前・実装後に使う 5軸レビューチェックリスト。
 - **`references/patterns.md`** — 頻出タスクの完成コード例（フォーム+Server Action、
   並列データ取得ページ、認可付き Route Handler、Suspense ストリーミング等）。

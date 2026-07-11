@@ -98,6 +98,8 @@ export async function deletePost(id: string) {
 
 - Server Actions は Next.js が Origin/Host 突き合わせによる CSRF 保護を持つが、独自 Route Handler で
   状態変更する場合は Origin/CSRF トークンを自前で確認する。
+- **Webhook 受信**はセッションが無く、**署名検証が唯一の認可**。生ボディで HMAC を定数時間比較し、
+  ペイロードの値を無検証で信頼しない（詳細は `references/cloud-webhooks.md`）。
 - **プロキシ/LB/カスタムドメイン配下**では許可オリジンを明示する（Origin/Host ベース判定のため、
   未設定だと正規リクエストが弾かれたり、転送ヘッダ改変で判定が崩れうる）。Server Actions 自体は
   安定版だが、この設定キーは **`experimental.serverActions` 配下**にある点に注意
