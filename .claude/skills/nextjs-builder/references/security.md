@@ -112,6 +112,9 @@ module.exports = {
 }
 ```
 - Cookie は `httpOnly` / `secure` / `sameSite` を適切に設定。トークンを `localStorage` に置かない。
+- **認証情報を自前で扱う（Auth.js Credentials 等）場合**: パスワードは **argon2id/bcrypt でハッシュ**（平文比較
+  しない）、ログイン/パスワードリセットの応答を**一様化してアカウント列挙を防ぐ**、メール検証を課す。
+  可能なら OAuth/パスワードレスへ**委譲**する方が安全（`references/stack-selection.md` §3 認証）。
 - `next.config` の `headers()` で `X-Content-Type-Options: nosniff`・`Strict-Transport-Security`・
   `Referrer-Policy` 等のセキュリティヘッダを設定する。
 - **CSP は静的 `headers()` だけでは不十分**になりやすい。Next.js はインラインスクリプト/RSC を
@@ -120,7 +123,8 @@ module.exports = {
 
 ## 7. その他
 
-- レート制限（ログイン・投稿・メール送信等の悪用されやすいエンドポイント）。
+- レート制限（ログイン・投稿・メール送信・公開API 等の悪用されやすいエンドポイント）。エッジ/プラットフォーム
+  WAF を第一に、必要ならアプリ層（`@upstash/ratelimit` 等）で補う。認証・メール・決済は特に濫用される境界。
 - エラーメッセージでスタックトレースや内部情報を漏らさない（本番では汎用メッセージ）。
 - 依存の既知脆弱性に注意（`npm audit` 等の存在を認識）。
 - ログに PII・秘密・トークンを出力しない。
@@ -129,4 +133,5 @@ module.exports = {
 - [ ] すべての境界入力を Zod 検証したか？
 - [ ] Server Action / Route Handler の先頭で認可したか？所有チェックはあるか？
 - [ ] 秘密がクライアントに漏れていないか（`NEXT_PUBLIC_` 誤用・`server-only` 未付与）？
+- [ ] 濫用されやすいエンドポイント（認証/メール/決済/公開API）にレート制限・クォータを設計したか？
 - [ ] `dangerouslySetInnerHTML` / 文字列連結SQL / オープンリダイレクトを避けたか？

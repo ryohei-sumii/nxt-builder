@@ -16,10 +16,18 @@
 実装前に、機能要件と**非機能要件**を押さえる。欠けていて設計を左右する項目は憶測せず確認する。
 
 - 機能: 何を作るか、主要ユースケース、データモデルの概略。
+- データ特性: データの形状（関係/ドキュメント/全文検索/時系列/地理空間）、整合性要件（トランザクション
+  境界・強整合の要否）、主要アクセスパターン（読み書き比率・検索/集計・分析の有無）、増加率。
+  → **DB/ORM という最も不可逆な選定の根拠**になる。
 - 規模・性能: 想定トラフィック、データ量、レイテンシ要件、SEO/初期表示の重要度。
+- リアルタイム性・非同期: 双方向/プッシュ更新（WebSocket/SSE）の要否、長時間・失敗リトライ前提の
+  バックグラウンド処理・定期実行・大容量ストリームの有無。→ runtime・ホスティング形態（serverless か
+  常駐コンテナ）・キュー/ワーカー導入を左右する（`references/cloud-webhooks.md` の非同期処理/キュー・
+  サーバーレスの制約）。
 - 制約: デプロイ先（Vercel / AWS / GCP / セルフホスト）、ランタイム（Edge/Node）、予算、
-  既存資産、チームの習熟。
-- 品質: 認証・認可の要否、コンプライアンス、可用性、国際化の要否。
+  既存資産、チームの習熟。大容量ファイル入出力の有無（→オブジェクトストレージ/presigned）。
+- 品質: 認証・認可の要否、コンプライアンス、可用性、国際化の要否。濫用されやすい経路
+  （認証/パスワードリセット/メール送信/公開API/決済）のレート制限・クォータ要件。
 
 ## 2. 選定フレーム（候補を5軸＋適合で評価）
 
@@ -29,6 +37,7 @@
   セキュリティ / 保守性(SOLID・型)。
 - **適合基準**: 成熟度・メンテ状況（活発か、非推奨でないか）、型の質/DX、ライセンス、
   ロックインの度合い、学習コスト、コミュニティ規模、既存スタックとの噛み合い。
+  （パッケージ名の**実在・正規性**は install 前に照合する。手順は `references/libraries.md`。）
 - **標準機能で足りるなら選定しない**（`references/libraries.md` の原則）。
 
 ## 3. 推奨デフォルト（Next.js 16 App Router 向け・理由付き）
@@ -39,9 +48,9 @@
 |----------|-----------|--------------------|
 | 言語/型 | TypeScript strict | 常時。境界は Zod で実行時検証。 |
 | 検証 | **Zod v4** | 型推論・境界検証。クライアント bundle 厳しめなら valibot。 |
-| DB | **PostgreSQL**（Neon/Supabase/RDS/Cloud SQL） | 汎用・関係整合。サーバーレスは接続プーラ前提。 |
+| DB | **PostgreSQL**（Neon/Supabase/RDS/Cloud SQL） | 関係整合・トランザクションが要る一般用途の妥当な既定。全文検索が重い/分析主体/ドキュメント志向/時系列・地理空間なら専用エンジン併用や別ストアを検討。サーバーレスは接続プーラ前提。 |
 | ORM | **Drizzle**（SQL 志向・軽量・型良好） or **Prisma**（DX・マイグレーション） | チーム習熟・Edge 要否で選ぶ。DAL 越しに使う。 |
-| 認証 | **Auth.js(NextAuth)**（自前運用） or **Clerk/WorkOS**（マネージド） | 速く出すならマネージド。認可は必ずサーバー側で。 |
+| 認証 | **委譲を既定に**: OAuth/パスワードレス or マネージド **Clerk/WorkOS**。要件が要れば **Auth.js** | Credentials で自前運用するなら argon2id/bcrypt ハッシュ・ログイン/リセット応答の一様化(列挙対策)・メール検証・レート制限が必須（`references/security.md` §6/§7）。認可は必ずサーバー側で。 |
 | スタイリング | **Tailwind CSS** | ユーティリティ・RSC 相性良。代替: CSS Modules。 |
 | UI 部品 | **shadcn/ui**（Radix 基盤・コード同梱） | a11y と tree-shaking。巨大 UI キット全体 import は避ける。 |
 | フォーム | **Server Actions + `useActionState`** | 既定。複雑な即時検証は React Hook Form + `zodResolver`。 |
@@ -51,10 +60,13 @@
 | 日付 | **date-fns** or **Temporal**（利用可なら） | moment は避ける（重い・非 tree-shakable）。 |
 | i18n | **next-intl** | App Router 対応。 |
 | メール | **React Email + Resend** | 型付き・DX。 |
-| 決済 | **Stripe** | Webhook は署名検証（`references/cloud-webhooks.md`）。 |
+| 決済 | **Stripe** | Webhook は公式 verifier で署名検証（`stripe.webhooks.constructEvent` + `stripe-signature` ヘッダ）。汎用 HMAC の骨子と一般手順は `references/cloud-webhooks.md`。 |
 | テスト | **Vitest**（単体）+ **Playwright**（E2E）+ Testing Library | `references/testing.md`。 |
 | Lint/整形 | **ESLint(flat) + Prettier** or **Biome** | 既存に従う。新規は Biome も可（高速）。 |
-| デプロイ | **Vercel**（マネージド） or **Node コンテナ**（Cloud Run/ECS） | DB プーリング・ランタイム選択は `references/data-access.md` / `cloud-webhooks.md`。 |
+| デプロイ | **Vercel**（マネージド） or **Node コンテナ**（Cloud Run/ECS） | 常時接続(WebSocket)/長時間・定期処理が要れば常駐コンテナ＋キュー。DB プーリング・ランタイム選択は `references/data-access.md` / `cloud-webhooks.md`。 |
+| レート制限/濫用対策 | エッジ/プラットフォーム **WAF**（Vercel Firewall / Cloudflare）優先、アプリ層は **@upstash/ratelimit** or **Arcjet** | 認証・メール・決済は最も濫用される境界。マネージド認証は bot/ブルートフォース対策内蔵だが Auth.js 自前運用は別途必要（`references/security.md` §7）。 |
+| オブジェクトストレージ | **S3 / GCS / R2** | 大容量ファイルは presigned URL でクライアント↔ストレージ直送。サーバー経由でメモリ/帯域/実行時間を食わない（`references/cloud-webhooks.md`）。 |
+| 非同期ジョブ/キュー | **SQS / Pub/Sub / Cloud Tasks**（外部なら Inngest / Trigger.dev） | 長時間・失敗リトライ前提の処理は serverless の `after()` に頼らず別ワーカーへ（`references/cloud-webhooks.md`）。 |
 | 監視 | **Sentry** / OpenTelemetry | 構造化ログ（秘密/PII を出さない）。 |
 
 ## 4. スタック決定記録（実装前に短く提示）
@@ -62,12 +74,19 @@
 選定したら、**着手前に 3〜6行**で決定を宣言する。長文の比較表は不要。
 
 ```
-選定: DB=Postgres(Neon) / ORM=Drizzle / 認証=Auth.js / UI=Tailwind+shadcn / 検証=Zod
-理由: サーバーレス前提でエッジ相性と型の良さを優先。マネージド認証は要件外のため自前。
+選定: DB=Postgres(Neon) / ORM=Drizzle / 認証=Auth.js(Credentials) / UI=Tailwind+shadcn / 検証=Zod
+理由: サーバーレス前提でエッジ相性・型・所有ベース認可の集約しやすさを優先。認証は委譲が既定だが、要件Xのため Credentials を自前運用（下記ガードを実装）。
+セキュリティ: 認可境界=所有チェックを DAL に集約 / テナント分離=tenant_id+RLS / 認証情報=argon2id ハッシュ+列挙対策 / 秘密=Secret Manager。
 代替: ORM は Prisma も可（マイグレーション DX 重視なら）。確認したい点: デプロイ先は Vercel でよいか？
 ```
 
+「セキュリティ」行では、真に不可逆な**認可境界（所有/ロール/テナント分離）**を核に据える。濫用対策・PII の
+扱いは要件に該当する場合のみ足す（常時全部盛りにして記録を膨らませない）。
+
 重大な選定・不可逆な決定・新規依存追加は、この時点で確認を取る。
+不可逆な選定（DB/ORM/認証/デプロイ）は、宣言に加えて**生成物側へ短く永続化**する（README の技術選定節、
+または `docs/adr/` の1ファイルに「決定 / 理由 / 却下した代替 / 見直し条件」を各1行）。後続セッションが
+可逆性を判断できるようにする。軽微なユーティリティ選定は対象外（肥大化を避ける）。
 
 ## 5. 実装する
 

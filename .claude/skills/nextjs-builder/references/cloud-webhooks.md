@@ -22,7 +22,7 @@ Webhook は **Route Handler (`app/**/route.ts`)** で受ける。以下は必須
   ペイロードの値（ユーザーID 等）を無検証で信頼しない。
 
 ```ts
-// app/api/webhooks/stripe/route.ts
+// app/api/webhooks/[provider]/route.ts — 汎用 HMAC の骨子（実プロバイダは公式方式に合わせる。下記注記）
 import { after, NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 
@@ -39,7 +39,7 @@ function verify(raw: string, sig: string | null, secret: string): boolean {
 
 export async function POST(req: Request) {
   const raw = await req.text()                          // 生ボディ（パース前）で検証
-  if (!verify(raw, req.headers.get('x-signature'), process.env.WEBHOOK_SECRET!)) {
+  if (!verify(raw, req.headers.get('x-signature'), process.env.PROVIDER_WEBHOOK_SECRET!)) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 401 })
   }
   const event = JSON.parse(raw) as { id: string; type: string }
@@ -49,6 +49,12 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true })          // すぐ ACK
 }
 ```
+
+> **プロバイダ公式の verifier があればそれを使う。** 署名スキームはプロバイダ毎に異なる（ヘッダ名・
+> 署名対象・エンコード）。例えば **Stripe** は `stripe-signature` ヘッダ＋`t=…,v1=…` 形式で、
+> `${timestamp}.${raw}` を署名対象にし、`stripe.webhooks.constructEvent(raw, sig, secret)` で検証する
+> （上の汎用 HMAC 骨子をそのまま Stripe に流用すると必ず検証失敗する）。タイムスタンプ署名（Stripe 含む）
+> では上記の許容窓によるリプレイ防止も適用する。
 
 > **`after()` の注意**: 応答後の処理は**同じ関数実行の寿命内**で走る。サーバーレスでは実行時間上限に
 > 縛られ、確実な完了保証はない。重い/失敗リトライが要る処理は **キュー**（SQS / Pub/Sub /
@@ -81,16 +87,28 @@ import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { createPresignedPutUrl } from '@/lib/storage'  // 実体は @aws-sdk/s3-request-presigner 等
 
-const Input = z.object({ filename: z.string().min(1), contentType: z.string().min(1) })
+// contentType は allowlist(enum)で強制。クライアント申告の任意文字列を無検証で署名に載せない
+const Input = z.object({
+  filename: z.string().min(1).max(255),
+  contentType: z.enum(['image/png', 'image/jpeg', 'application/pdf']),
+})
 
 export async function getUploadUrl(input: unknown) {
   const { userId } = await verifySession()                       // 認証・認可
   const parsed = Input.safeParse(input)
   if (!parsed.success) return { error: 'invalid' as const }
+  // 署名した contentType は PUT 時に一致必須＝型を強制できる。key は UUID 前置で衝突/上書き防止
   const key = `users/${userId}/${crypto.randomUUID()}-${parsed.data.filename}`
   return { url: await createPresignedPutUrl(key, parsed.data.contentType), key }
 }
 ```
+
+> **presigned はサーバーを経由させない分、発行時の事前条件が唯一のガードになる。** 最低限
+> **contentType は allowlist で強制**する（署名した ContentType は PUT で一致必須）。**サイズ上限**は
+> presigned PUT では range 強制ができないため、ブラウザ直アップロードは `content-length-range` を持つ
+> **presigned POST** を使うか、**完了後に HEAD でサイズ/実 Content-Type を検証**してから利用可能化する。
+> `filename` は UUID 前置で衝突は防げるが、必要なら拡張子・文字種を軽くサニタイズする。
+> （範囲強制の可否など SDK 依存挙動は `@aws-sdk/s3-request-presigner` の公式で裏取りする。）
 
 ### 非同期処理 / キュー
 - 重い/失敗リトライ前提の処理（メール送信・画像変換・外部同期・Webhook 実処理）は
