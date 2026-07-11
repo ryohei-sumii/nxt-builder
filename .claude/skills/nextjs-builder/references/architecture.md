@@ -34,7 +34,7 @@ export default async function Page() {
   **先頭で認証・認可 → 入力検証（Zod）** を行う（`references/security.md`）。
   「ログイン済みか（認証）」と「その資源の持ち主か（認可・所有チェック）」は別物として両方確認する。
 - `revalidatePath` / `revalidateTag` でキャッシュを更新し、必要なら `redirect()` する。
-- 進捗/エラー UI は `useActionState`（React 19 / Next 15）または `useFormStatus` で扱う。
+- 進捗/エラー UI は `useActionState`（React 19.2 / Next 16）または `useFormStatus` で扱う。
 
 ```tsx
 // app/actions.ts
@@ -89,14 +89,25 @@ export const getUser = cache(async (id: string) => db.user.findUnique({ where: {
 
 ## キャッシュ / 再検証（明示的に設計する）
 
-- **前提（Next.js 15）**: `fetch` のデフォルトは **uncached（毎回取得＝`no-store` 相当）**。
-  Next 14 以前の「デフォルトでキャッシュされる」挙動は逆転した。**キャッシュはオプトイン**する。
-- `fetch(url, { next: { revalidate: 3600 } })` … キャッシュを有効化しつつ時間ベース ISR。
-- `fetch(url, { cache: 'force-cache' })` … 恒久キャッシュ（明示的にキャッシュする）。
-- `fetch(url, { cache: 'force-cache', next: { tags: ['posts'] } })` + `revalidateTag('posts')`
-  … タグ無効化。**タグはキャッシュされたレスポンスにのみ効く**ため、キャッシュ有効化（`force-cache`
-  か `revalidate`）と併用しないと `revalidateTag` は無効。
-- 何も付けない `fetch(url)` … デフォルトで毎回取得（`no-store` 相当）。明示したいなら `{ cache: 'no-store' }`。
+- **前提（Next.js 16）**: キャッシュは**完全にオプトイン**。デフォルトでは動的コードは
+  **リクエスト時に実行**され、`fetch` も **uncached（毎回取得）** がデフォルト。
+  Next 14 以前の「暗黙にほぼ全部キャッシュ」挙動は撤廃された。
+- **Cache Components（推奨モデル）**: `next.config` で `cacheComponents: true` を有効化し、
+  キャッシュしたいコンポーネント/関数/ルートの先頭に **`'use cache'` ディレクティブ**を付けて
+  明示的にキャッシュする（PPR と組み合わさり、静的な殻を即返しつつ動的部分をストリーミングする）。
+
+```tsx
+// キャッシュしたい単位の先頭に付ける
+async function ProductList() {
+  'use cache'
+  const products = await db.product.findMany()
+  return <ul>{products.map((p) => <li key={p.id}>{p.name}</li>)}</ul>
+}
+```
+
+- **fetch 単位の制御**: `fetch(url, { cache: 'force-cache' })` で明示キャッシュ、
+  `{ next: { revalidate: 3600 } }` で時間ベース再検証、`{ next: { tags: ['posts'] } }` で
+  タグ付け（**タグはキャッシュされたレスポンスにのみ効く**ため、キャッシュ有効化と併用する）。
 - ミューテーション後は `revalidatePath` / `revalidateTag` で確実に反映する。
 - **「なぜこのキャッシュ戦略か」をコメントで残す。** 暗黙のキャッシュはバグの温床。
 
@@ -114,12 +125,15 @@ export const getUser = cache(async (id: string) => db.user.findUnique({ where: {
   `app/sitemap.ts` / `app/robots.ts` / `app/opengraph-image.(tsx|png)` はファイル規約で自動配信される
   （動的メタデータの完成例は `references/patterns.md`）。
 
-## middleware (`middleware.ts`)
+## proxy (`proxy.ts`) — 旧 middleware
 
+- **Next.js 16 で `middleware.ts` は `proxy.ts` に改名**（エクスポート関数も `proxy`）。
+  `middleware.ts` は Edge 用途向けに残るが**非推奨**（将来削除）。移行 codemod:
+  `npx @next/codemod@canary middleware-to-proxy .`。
 - ルート単位の**軽い**前処理（認証リダイレクト・i18n・セキュリティヘッダ付与）に使う。
   `export const config = { matcher: [...] }` で対象ルートを絞る（全リクエストに走らせない）。
-- **Edge ランタイム**で動くため、Node 専用 API・重い処理・本命の DB 認可を置かない。
-  セッション cookie の有無など軽い判定に留める。
+- **`proxy.ts` は Node.js ランタイムで動く（変更不可）**。旧 `middleware.ts` の Edge ランタイムとは
+  異なる。いずれにせよ重い処理・本命の DB 認可を置かず、cookie の有無など軽い判定に留める。
 - **認可の主機構にしない。** 本命の認可はデータに近い層（Server Action / Route Handler /
   `lib/data/`）で行う（理由と既知の落とし穴は `references/security.md`）。
 

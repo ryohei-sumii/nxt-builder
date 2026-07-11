@@ -12,7 +12,11 @@ description: >-
 # Next.js Builder — 最適化ビルダーの知識ベース
 
 Next.js **App Router + TypeScript** のコードを 5軸で最適化するための実務ガイド。
-インストール不要（マークダウンのみ）。エージェント `nextjs-builder` と併用できる。
+**Next.js 16 / React 19.2 前提**（Turbopack 既定・非同期リクエストAPI・Cache Components・
+`proxy.ts`）。インストール不要（マークダウンのみ）。エージェント `nextjs-builder` と併用できる。
+
+> 対象プロジェクトの Next.js バージョンは `package.json` で確認し、15 以前なら該当機能
+> （`use cache` / `proxy.ts` 等）は使わず、そのバージョンの作法に合わせること。
 
 ## 使い方（このスキルを読んだら）
 
@@ -20,7 +24,7 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
    種別ごとに進め方が変わる（下記「タスク種別ごとの進め方」）。
 2. **まず既存コードを調べる。** 何かを書く前に対象リポジトリの規約を把握する:
    - `package.json`（PM・Next バージョン・依存）, `tsconfig.json`, `next.config.*`, `app/` 構成,
-     `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn/ui）, `middleware.ts`, `README`。
+     `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn/ui）, `proxy.ts` / `middleware.ts`, `README`。
    - 既存の PM（npm/pnpm/yarn/bun）・DB・認証・状態管理・スタイリングを**尊重**する。新規導入しない。
 3. **実装** は該当種別の手順と下記チェックリスト（`references/checklist.md`）を満たす。
 4. **セルフレビュー** — 5軸チェックリストで確認し、可能なら型チェック/リンタ/ビルド（あればテスト）を走らせる。

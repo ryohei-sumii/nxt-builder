@@ -1,6 +1,6 @@
 # セキュリティ（妥協しない）
 
-Next.js の攻撃面は主に **信頼境界**（Server Action / Route Handler / middleware）に集中する。
+Next.js の攻撃面は主に **信頼境界**（Server Action / Route Handler / proxy〔旧 middleware〕）に集中する。
 「クライアントで見せない＝守った」ではない。**サーバー側で防御する。**
 
 ## 1. 入力検証 — 全境界で Zod（型注釈は検証ではない）
@@ -37,11 +37,12 @@ export async function deletePost(id: string) {
 }
 ```
 
-- `middleware.ts` はルート単位の粗いガードには使えるが、**認可の主機構にしない**
-  （Server Action/Route Handler/`lib/data` 側でも再チェック）。
+- `proxy.ts`（Next 16 で `middleware.ts` から改名。Node ランタイム）はルート単位の粗いガードには
+  使えるが、**認可の主機構にしない**（Server Action/Route Handler/`lib/data` 側でも再チェック）。
   過去に middleware を丸ごとスキップさせるバイパス（**CVE-2025-29927**, `x-middleware-subrequest`
-  ヘッダ）があり、公式も認可判定は**データに近い層**で行うことを推奨している。middleware は
+  ヘッダ）があり、公式も認可判定は**データに近い層**で行うことを推奨している。proxy/middleware は
   「未ログインを弾く軽い一次ガード」に留め、本命の所有チェックはデータアクセス時に行う。
+  （Next 16 移行時、`middleware.ts` を残すと matcher が黙って無効化され認証が抜ける点にも注意。）
 
 ## 3. 秘密情報 / 環境変数
 
@@ -59,7 +60,7 @@ export async function deletePost(id: string) {
   ネットワークに露出する（画面に出していなくても漏れる）。
 - 対策: **表示に必要なフィールドだけ**を渡す。DB オブジェクトを丸ごと渡さず、クエリで `select`
   して DTO 化する（`references/patterns.md` の `getUser` は `select` で id/name のみ取得）。
-- **taint API**（React 19 / Next 15）で誤流出をビルド/実行時に検出できる:
+- **taint API**（React 19.2 / Next 16）で誤流出をビルド/実行時に検出できる:
   `experimental_taintObjectReference(理由, obj)` / `experimental_taintUniqueValue(理由, obj, 値)`。
   機密を含むオブジェクトに掛けておくと、誤ってクライアントへ渡した時点で落ちる。
 
@@ -91,7 +92,7 @@ export async function deletePost(id: string) {
 - `next.config` の `headers()` で `X-Content-Type-Options: nosniff`・`Strict-Transport-Security`・
   `Referrer-Policy` 等のセキュリティヘッダを設定する。
 - **CSP は静的 `headers()` だけでは不十分**になりやすい。Next.js はインラインスクリプト/RSC を
-  出すため、実効的な `script-src` には **middleware でリクエスト毎に nonce を発行**し、
+  出すため、実効的な `script-src` には **proxy（旧 middleware）でリクエスト毎に nonce を発行**し、
   nonce ベース + `'strict-dynamic'` にする（`'unsafe-inline'` に頼ると XSS 防御が骨抜きになる）。
 
 ## 7. その他

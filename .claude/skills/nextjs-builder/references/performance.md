@@ -2,6 +2,10 @@
 
 「速い」ではなく「無駄がない」を目指す。サーバーに寄せ、クライアントに送る JS を減らす。
 
+> **Next.js 16 前提**: ビルド/dev は **Turbopack がデフォルト**（カスタム webpack 設定があると
+> `next build` は失敗して誤設定を知らせる）。また `next build` 出力から size / First Load JS 指標が
+> 削除された（RSC 構成では不正確なため）。バンドル計測は `@next/bundle-analyzer` 等で行う。
+
 ## クライアントバンドルの最小化（最重要）
 
 - **Server Component をデフォルト**にするだけで、その分の JS はクライアントに送られない。
@@ -19,7 +23,7 @@ const RichEditor = dynamic(() => import('@/components/rich-editor'), {
 })
 ```
 
-> **Next.js 15 の制約**: Server Component 内で `next/dynamic` に `ssr: false` を指定すると
+> **制約（Next.js 16 でも同様）**: Server Component 内で `next/dynamic` に `ssr: false` を指定すると
 > ビルドエラーになる（`ssr: false` は Client Component 専用）。本ガイドは「Server Component が
 > デフォルト」なので要注意。Server Component から client 専用の重い依存を遅延したい場合は、
 > `ssr: false` を含む**薄い Client ラッパー**を1枚挟むか、`ssr: false` を外す（SSR させる）。

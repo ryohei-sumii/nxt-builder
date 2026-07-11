@@ -40,17 +40,23 @@
   逆に「更新が速すぎる/毎回取得される」なら `revalidate` 値やキャッシュ設定を見直す。
 - **Router Cache（クライアント側）**: 遷移で古い画面が出る場合は `router.refresh()` を検討。
 
-### `params` / `searchParams` / `cookies()` / `headers()` の await 漏れ（Next 15+）
-- **原因**: Next.js 15 でこれらが**非同期（Promise）**になった。`params.id` を直接参照すると
-  型エラーや `undefined`。
+### `params` / `searchParams` / `cookies()` / `headers()` の await 漏れ
+- **原因**: これらは**非同期（Promise）**。Next 15 で非同期化され、**Next 16 で同期アクセスは完全撤廃**
+  された（もう同期では読めない）。`params.id` を直接参照すると型エラーや `undefined`。
 - **修正**: `const { id } = await params` のように await する。型は
   `{ params: Promise<{ id: string }> }`。
 
-### 動的レンダリングへの意図しない切り替え
-- **原因**: `cookies()` / `headers()` / `searchParams` / `no-store` を使うとルートが動的になる。
-  「静的にしたいのに毎回サーバー実行される」ことがある。
-- **修正**: 動的 API の使用箇所を必要な範囲に閉じ込め、`<Suspense>` で切り分ける。
-  ビルド出力（`○ Static` / `ƒ Dynamic`）でレンダリング種別を確認する。
+### middleware → proxy 改名で認証が無効化された（Next 16）
+- **原因**: Next 16 で `middleware.ts` は `proxy.ts`（関数名も `proxy`）に改名。旧 `middleware.ts` を
+  残したまま 16 に上げると **matcher が黙って走らなくなり、認証リダイレクトが効かなくなる**ことがある。
+- **修正**: `middleware.ts` → `proxy.ts`、export を `proxy` に。codemod:
+  `npx @next/codemod@canary middleware-to-proxy .`。proxy は Node ランタイムで動く点にも注意。
+
+### 動的レンダリング / キャッシュ未適用の切り替え
+- **原因（Next 16）**: デフォルトで動的（リクエスト時実行）。`cacheComponents` + `'use cache'` を
+  付け忘れると「キャッシュされず毎回実行」になり、逆に想定と違う静的化/キャッシュもディレクティブ次第。
+- **修正**: キャッシュしたい単位に `'use cache'` を付ける。動的 API（`cookies()` 等）は必要な範囲に
+  閉じ込め `<Suspense>` で切り分ける。ビルド出力でレンダリング種別を確認する。
 
 ### `revalidatePath`/`redirect` が効かない・例外になる
 - `redirect()` は内部的に例外を投げて制御を返すため、**`try/catch` の中で呼ぶと握りつぶされる**。

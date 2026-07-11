@@ -79,7 +79,7 @@ import { Suspense } from 'react'
 import { getUser } from '@/lib/data/users'      // React.cache でラップ済み
 import { RecentOrders } from './recent-orders'
 
-// Next 15: params は Promise。ファイルパスに [id] が無いと id は undefined になる
+// Next 16: params は Promise（同期アクセス不可）。ファイルパスに [id] が無いと id は undefined になる
 export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await getUser(id)                 // 速い取得は待つ
