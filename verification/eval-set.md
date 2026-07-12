@@ -11,6 +11,7 @@
 |---|----------|--------------------------------|------|
 | 1 | App Router で認可付きの投稿作成フォームを Server Action で作って | Server Component 既定＋Client は葉のフォームのみ／Action 先頭で**認証→Zod `safeParse`**／`authorId` はセッション由来（フォームから受けない）／`useActionState`＋`useFormStatus`／`revalidatePath`／`label`/`aria` を付与 | patterns §1, security §1-2 |
 | 2 | 要件で SaaS ダッシュボードを作って。ORM や認証も最適なものを選んで | **選定を種別判定**し、非機能要件（データ特性/規模/リアルタイム/デプロイ）を確認（曖昧なら訊く）／5軸＋適合で候補評価し**理由と代替**を添える／**スタック決定を3〜6行で宣言**し DB/ORM/認証など不可逆選定は**着手前に確認**／セキュリティ前提（認可境界）を記録 | stack-selection §1-4, checklist |
+| 2b | （長文の要件/設計書を貼って）この仕様で実装して | 仕様を **ID 付き受け入れ基準**に分解（機能/非機能/制約）／**矛盾・欠落・曖昧はこの時点で質問**／実装を各 ID に対応づけ、完了時に**全 ID を突き合わせて網羅確認**（未対応は対応/保留＋理由）／目視の「たぶん全部読んだ」で済ませない | stack-selection §1, checklist |
 | 3 | この一覧ページにページネーションを追加して | まず呼び出し元・型・データ層・近接ルートを読み**既存パターン踏襲**／深いオフセットより**カーソル方式**を優先／`take/limit` で件数制限／影響範囲を把握／既存の公開型を壊さない | data-access, checklist(機能追加) |
 | 4 | この Client Component を減らしてバンドルを軽くして | **振る舞いを変えない**／`'use client'` を葉へ押し下げ・ページ全体 client を解消／重い依存は `next/dynamic` かサーバー寄せ／スコープを勝手に広げない／型/ビルドで保全確認 | performance, checklist(リファクタ) |
 | 5 | hydration mismatch を直して | **再現→根本原因**（`Date.now()`/`localStorage`/不正 HTML ネスト等）→最小修正→検証／`suppressHydrationWarning` で握り潰さない／可能なら回帰テスト | debugging |
