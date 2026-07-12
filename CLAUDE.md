@@ -104,6 +104,15 @@ README.md                             # 構成と使い方
   （agent 136→108行。品質を担保しているのは「タスク種別ルーティング＋必要時の reference 読み」であり、
   要約の再掲は非寄与だと eval-set 10件で確認）。SKILL.md も自己検証条件の二重記載を1本化。
   frontmatter description は発火/選定品質を落とさないため非変更。設計意図「agent＝薄い行動プロトコル」に回帰。
+- ラウンド10で**パッケージマネージャ非依存化**（npm 決め打ちの解消）: PM 尊重は「依存の選定」だけでなく
+  **実行コマンド全体**（install/build/test/lint/codemod/audit）に及ぶべきなのに、具体コマンドが軒並み
+  `npm audit` / `npx @next/codemod` / `npx playwright` と npm 固定だった。セキュリティ方針で npm を禁止し
+  pnpm/bun のみ許可する組織があるため、(1)`libraries.md` に「PM を尊重して実行する」節＋PM別コマンド対応表
+  （npm/pnpm/yarn(berry)/bun × 固定install/追加/script/exec/dlx/audit）を新設。lockfile と `packageManager`
+  から特定、版差は裏取りする注記付き。(2)agent の既存規約把握・SKILL の調査手順・checklist の最終確認に
+  「特定した PM 経由で実行、npm/npx を決め打ちしない」を横断追加（3ファイル整合）。(3)testing/debugging/
+  architecture/security の決め打ちコマンドを対応表参照の中立表現へ。コード例（コンパイル対象）は不変なので
+  ハーネス再実行は不要（プロース/表のみ）。
 
 ## Git / ブランチ
 

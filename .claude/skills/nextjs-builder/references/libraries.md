@@ -16,10 +16,36 @@
 - **セキュリティ。** 秘密を扱うか（→ `server-only` 側に隔離）。メンテ状況・既知脆弱性・
   依存ツリーの大きさ（サプライチェーン面）を確認する。**選定した依存は install 前に名前の実在・正規性を
   確認する**（公式リポジトリ/発行元 provenance/正規名を照合し、綴り近縁の別パッケージ〔typo/slopsquat〕に
-  注意。LLM が生成した名は実在・正規と限らない）。新規スタックの初期は lockfile を固定し `npm audit` を回す。
+  注意。LLM が生成した名は実在・正規と限らない）。新規スタックの初期は lockfile を固定し、**検出した PM の
+  監査コマンド**（`npm audit` / `pnpm audit` / `yarn npm audit` / `bun audit`）を回す。
 - **保守性（可読性/SOLID）。** 型が効くか。抽象（`lib/data` 等）越しに使えて差し替え可能か
   （特定ライブラリに UI を直結させない = DIP）。
 - **重複を作らない。** 同種の別ライブラリが既にあるなら揃える（zod と yup の混在等を避ける）。
+
+## パッケージマネージャ（PM）を尊重して実行する
+
+**`npm` / `npx` を決め打ちしない。** プロジェクトはセキュリティ方針で **npm を禁止**していることがあり
+（レジストリ制限・`pnpm` のみ許可・`bun` 標準など）、間違った PM を叩くと lockfile の不整合や失敗を招く。
+
+1. **PM を特定する。** lockfile（`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock` / `bun.lockb`）と
+   `package.json` の **`packageManager` フィールド**（例 `"pnpm@9.x"`）から判定する。両方あれば
+   `packageManager` を優先。どちらも無い新規は、既存の CI/README/Docker の記述に従い、無ければ既定を選ぶ
+   （選定理由を添える）。
+2. **install / build / test / lint / codemod など、あらゆるコマンドを特定した PM 経由で実行する。**
+
+| 操作 | npm | pnpm | yarn (berry) | bun |
+|------|-----|------|--------------|-----|
+| 固定インストール | `npm ci` | `pnpm install --frozen-lockfile` | `yarn install --immutable` | `bun install --frozen-lockfile` |
+| 依存追加 | `npm i <pkg>` | `pnpm add <pkg>` | `yarn add <pkg>` | `bun add <pkg>` |
+| script 実行 | `npm run <s>` | `pnpm <s>` | `yarn <s>` | `bun run <s>` |
+| ローカル bin 実行（tsc 等） | `npx <bin>` | `pnpm exec <bin>` | `yarn <bin>` | `bunx <bin>` |
+| リモート単発実行（codemod 等） | `npx <pkg>` | `pnpm dlx <pkg>` | `yarn dlx <pkg>` | `bunx <pkg>` |
+| 監査 | `npm audit` | `pnpm audit` | `yarn npm audit` | `bun audit` |
+
+> **サブコマンドの厳密形は PM とその版で差がある**（yarn は v1〔classic〕と v2+〔berry〕で
+> `--frozen-lockfile`↔`--immutable`・`yarn audit`↔`yarn npm audit` が異なる）。`packageManager` で版を確認し、
+> 不確かなら `<pm> --help` か公式で裏取りする（記憶で断定しない）。既存の `package.json` の `scripts`
+> （`build` / `test` / `lint` / `typecheck` 等）があれば、それを PM 経由で呼ぶのが最も安全。
 
 ## Zod を最適に使う（バリデーションの中核）
 

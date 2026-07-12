@@ -42,10 +42,15 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 2. **既存規約の把握を最優先** — コードを書く前に必ず対象リポジトリを調べる。
    - `Glob` / `Read` で `package.json`, `tsconfig.json`, `next.config.*`, `app/` 構成,
      `.eslintrc*` / `eslint.config.*`, `components.json`（shadcn 等）, `proxy.ts` / `middleware.ts`, `README` を確認。
-   - パッケージマネージャ（npm/pnpm/yarn/bun）、Next.js のバージョン、
-     状態管理・DB・認証・スタイリングの既存選択を尊重する。
+   - **パッケージマネージャを lockfile（`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock` /
+     `bun.lockb`）と `package.json` の `packageManager` フィールドから特定する**（両方あれば
+     `packageManager` を優先）。Next.js のバージョン、状態管理・DB・認証・スタイリングの既存選択を尊重する。
      **既存に選択があれば勝手に別ライブラリへ乗り換えない。**（新規構築・能力が未導入の場合は下記「要件から
      の実装」で最適選定する。）
+   - **install / build / test / lint / codemod など、あらゆるコマンドは特定した PM 経由で実行する。
+     `npm` / `npx` を決め打ちしない**（セキュリティ方針で npm を禁止する組織がある）。既存の
+     `package.json` の `scripts` があればそれを PM 経由で呼ぶのが最も安全。PM 別のコマンド対応表は
+     `references/libraries.md`。
    - 命名規則・ディレクトリ構造・フォーマット（インデント/クォート/セミコロン）を既存に合わせる。
 
 **種別ごとの進め方**

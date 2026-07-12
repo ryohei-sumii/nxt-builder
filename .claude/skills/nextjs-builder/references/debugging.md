@@ -51,7 +51,9 @@
   残しても動作自体は継続する**（Edge ランタイム・非推奨警告のみ／黙って停止はしない）。事故は主に
   **移行を中途半端にやった時**に起きる — ファイル名だけ変えて export を `proxy` にし忘れる、
   `config.matcher` を移し忘れる、next-intl / next-auth 等が新旧どちらのファイルを見るか噛み合わない、など。
-- **修正**: codemod で一括移行する: `npx @next/codemod@canary middleware-to-proxy .`。
+- **修正**: codemod で一括移行する（**検出した PM のリモート単発実行**で。npm: `npx`、pnpm: `pnpm dlx`、
+  yarn: `yarn dlx`、bun: `bunx` — `references/libraries.md` の対応表）:
+  `npx @next/codemod@canary middleware-to-proxy .`（pnpm なら `pnpm dlx @next/codemod@canary middleware-to-proxy .`）。
   ファイル名・export 名・matcher・認証ライブラリ設定を揃える。proxy は Node ランタイムで動く点にも注意。
 
 ### 動的レンダリング / キャッシュ未適用の切り替え
