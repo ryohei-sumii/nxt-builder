@@ -31,8 +31,10 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
      npm 禁止の組織あり）。PM 別のコマンド対応表は `references/libraries.md`。
 3. **実装** は該当種別の手順と下記チェックリスト（`references/checklist.md`）を満たす。
 4. **セルフレビュー（完了条件）** — 5軸チェックリスト（`references/checklist.md`）で確認。コードを生成/
-   変更したら型チェック（`tsc --noEmit` 相当）/ビルド（あればテスト）を実行し**緑まで完了としない**
-   （回せない環境なら未検証と明示。詳細は末尾「絶対に守る不変則」と `references/checklist.md` 最終確認）。
+   変更したら型チェック（`tsc --noEmit` 相当）/ビルド（あればテスト）を実行し**緑まで完了としない**。
+   `node_modules` 不在・install 不可でも「未検証で終える」を既定にせず、**検証の梯子**（既存 scripts →
+   固定 install → 型チェック単独 → 静的照合）で確信度を上げる。回し切れない項目は**検証済み/未検証を
+   分けて具体的に明示**する（「全部未検証」で丸めない。詳細は `references/checklist.md`「検証の梯子」）。
 
 ## タスク種別ごとの進め方
 
@@ -112,6 +114,8 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
 - クライアントに送ってよい環境変数は `NEXT_PUBLIC_` のみ。秘密モジュールに `import 'server-only'`。
 - `fetch` のキャッシュ挙動と `revalidate*` を**明示設計**する。曖昧なキャッシュを残さない。
 - データ取得は**並列化**（`Promise.all`）し、リクエスト重複は `React.cache`。
+- **失敗は種類で扱い分ける**: 予期される失敗＝typed 返却/適切な 4xx、予期しない失敗＝握り潰さず throw して
+  最寄りの `error.tsx`（root は `global-error.tsx`）へ。`notFound()`/`redirect()` は `try/catch` の外で呼ぶ。
 - `dangerouslySetInnerHTML` / 文字列連結SQL / `any` を避ける。
 - 生成コードは**完全に動く**ものにする。`// ...` で省略しない。**型チェック/ビルド（あればテスト）を
   実行して緑を確認するまで完了としない**（回せない環境なら未検証と明示する）。

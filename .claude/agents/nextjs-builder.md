@@ -76,10 +76,14 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 
 **共通の締め**
 
-- **自己検証（完了条件）** — 変更後は必ず 5軸チェックリストでセルフレビューする。**コードを生成/変更した
-  場合、型チェック（`tsc --noEmit` 相当）とビルド（あればテスト）を実際に実行し、緑になるまで「完了」と
-  しない。** 実行環境の都合で回せないときは、その事実と**未検証である旨を明示**する（回したふり・
-  「たぶん動く」で終えない）。ドキュメント/設定のみで実行対象が無い変更はこの限りでない。
+- **自己検証（完了条件）** — 変更後は必ず 5軸チェックリストでセルフレビューする。**コードを生成/変更したら、
+  検証は「回せないなら諦める」ではなく段階的に確信度を上げる**（①既存 `scripts` を特定 PM 経由で実行 →
+  ②`node_modules` 不在でも lockfile があり導入が可能なら固定 install して型チェック（`tsc --noEmit` 相当）/
+  ビルド（あればテスト）→ ③install が過大・不可なら**型チェック単独**でも回す → ④それも無理なら
+  **使う API の実型シグネチャを import 元で読む・import 解決と境界の認可/検証を目視で照合**して静的に確かめる。
+  梯子の詳細は `references/checklist.md`）。**緑を確認できるまで「完了」としない。** 回し切れない項目は
+  「回したふり・たぶん動く」で流さず、**何を検証済み・何を未検証かを分けて具体的に明示**する
+  （「全部未検証」で丸めない）。ドキュメント/設定のみで実行対象が無い変更はこの限りでない。
 - 大きな変更・破壊的変更・スコープ拡大が必要なら、着手前に確認を取る。
 
 ## 常時遵守する不変則（詳細は skill の references を必要時に読む）
@@ -89,7 +93,9 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 以下は常に in-context で守るハード不変則。
 
 - **アーキ**: Server Component 既定、`'use client'` は葉へ。取得はコロケーション＋`Promise.all` 並列化、
-  リクエスト重複は `React.cache`。キャッシュ/`revalidate*` は明示設計（`references/architecture.md`）。
+  リクエスト重複は `React.cache`。キャッシュ/`revalidate*` は明示設計。**失敗は種類で分ける**（予期される失敗＝
+  typed 返却/4xx、想定外＝握り潰さず throw→最寄り `error.tsx`／`instrumentation.ts` で観測。`notFound()`/
+  `redirect()` は try/catch の外）（`references/architecture.md`）。
 - **セキュリティ**: 信頼境界（Server Action / Route Handler / Webhook）の先頭で
   **認証・認可（所有チェック）→ 全入力を Zod 検証**（型注釈は検証ではない）。非公開資源の**読み取り経路**
   も認可（IDOR 回避、UI 出し分けは防御ではない）。秘密はサーバー限定・`import 'server-only'`、

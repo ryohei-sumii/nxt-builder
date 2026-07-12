@@ -132,6 +132,24 @@ async function ProductList() {
   `app/sitemap.ts` / `app/robots.ts` / `app/opengraph-image.(tsx|png)` はファイル規約で自動配信される
   （動的メタデータの完成例は `references/patterns.md`）。
 
+## エラーと耐障害性（失敗の設計）
+
+失敗を「握り潰す」でも「全部 500」でもなく、**種類で扱いを分ける**。
+
+- **予期される失敗**（認証否・認可否・入力不正・ドメイン制約〔在庫切れ・重複・残高不足〕）
+  → Server Action は **typed に返す**（`{ error }` / 判別可能な結果型）。UI がその値で分岐して伝える。
+  Route Handler は適切な **4xx**（401/403/400/404/409）。これらは正常系の一部であり例外にしない。
+- **予期しない失敗**（DB/外部API 障害・想定外の null・バグ）→ **握り潰さず throw させる**。
+  最寄りの `error.tsx`（無ければ `global-error.tsx`）が受け、`digest` でサーバーログと相関できる。
+  空 `catch` / `any` / `@ts-ignore` で隠すのは禁じ手（`references/debugging.md`）。画面には詳細を出さない。
+- **`notFound()` は「無い」に、`redirect()` は「行き先変更」に。** どちらも内部で例外を投げて制御を返すため、
+  **`try/catch` の外**で呼ぶ（`references/debugging.md`）。「無い」を 500 にしない。
+- **観測性**: サーバー側の未捕捉エラーは `instrumentation.ts` の **`onRequestError`** で一元観測する
+  （Sentry/OTel へ送るならここ。`register()` で SDK 初期化）。ログは**構造化**し、**PII・秘密・トークンを
+  出さない**（`references/security.md`）。監視SDK を「入れるか」は規模・要件で判断し、新規依存は着手前に確認。
+- 外部連携の**冪等性・リトライ・タイムアウト**は `references/cloud-webhooks.md`。完成例
+  （`error` / `global-error` / `not-found` / `instrumentation`）は `references/patterns.md` §7。
+
 ## proxy (`proxy.ts`) — 旧 middleware
 
 - **Next.js 16 で `middleware.ts` は `proxy.ts` に改名**（エクスポート関数も `proxy`）。

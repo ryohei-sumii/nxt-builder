@@ -5,7 +5,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
   return (
     <div role="alert">
       <p>問題が発生しました。</p>
-      <button onClick={reset}>再試行</button>
+      <button onClick={() => reset()}>再試行</button>
     </div>
   )
 }

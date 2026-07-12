@@ -272,13 +272,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
 ---
 
-## 7. エラーバウンダリ（error.tsx / global-error.tsx）
+## 7. エラーと耐障害性（error / global-error / not-found / instrumentation）
+
+**予期される失敗は typed に返し（§1 の Server Action）、予期しない失敗は throw させて下の境界＋観測で受ける**
+（設計原則は `references/architecture.md`「エラーと耐障害性」）。
 
 ```tsx
-// app/posts/error.tsx  (Client Component 必須)
+// app/posts/error.tsx  (Client Component 必須) — セグメント境界。本番は詳細を出さず reset() のみ提供
 'use client'
 
-// 本番はエラー詳細を画面に出さない。reset() で再試行のみ提供する
 export default function Error({
   error,
   reset,
@@ -289,11 +291,68 @@ export default function Error({
   return (
     <div role="alert">
       <p>問題が発生しました。</p>
-      <button onClick={reset}>再試行</button>
+      <button onClick={() => reset()}>再試行</button>
     </div>
   )
 }
 ```
 
-`app/global-error.tsx` は root layout 自体のエラーを捕捉する特殊版で、`'use client'` かつ
-自前で `<html><body>` を描画する（`return <html><body>…</body></html>`）。
+```tsx
+// app/global-error.tsx  (Client Component 必須) — root layout 自体の失敗を捕捉。自前で <html><body> を描画
+'use client'
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    <html lang="ja">
+      <body>
+        <div role="alert">
+          <p>問題が発生しました。</p>
+          <button onClick={() => reset()}>再試行</button>
+        </div>
+      </body>
+    </html>
+  )
+}
+```
+
+```tsx
+// app/not-found.tsx  (Server Component でよい) — notFound() の描画先。404 応答になる
+import Link from 'next/link'
+
+export default function NotFound() {
+  return (
+    <main>
+      <h1>ページが見つかりません</h1>
+      <Link href="/">ホームへ戻る</Link>
+    </main>
+  )
+}
+```
+
+```ts
+// instrumentation.ts  (プロジェクト直下) — 起動時初期化 + 未捕捉エラーの一元観測（Next 16 で安定）
+import type { Instrumentation } from 'next'
+
+export function register() {
+  // 監視SDK（OTel / Sentry 等）の初期化はここ。導入是非は規模・要件で判断（新規依存は着手前に確認）
+}
+
+// 予期しないサーバーエラーを集約観測。ログは構造化し PII/秘密/トークンを載せない（references/security.md）
+export const onRequestError: Instrumentation.onRequestError = (err, request, context) => {
+  console.error(
+    JSON.stringify({
+      msg: 'request_error',
+      path: request.path,
+      method: request.method,
+      routeType: context.routeType, // 'render' | 'route' | 'action' | 'proxy'
+      error: err instanceof Error ? err.message : 'unknown',
+    }),
+  )
+}
+```

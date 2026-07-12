@@ -113,6 +113,18 @@ README.md                             # 構成と使い方
   「特定した PM 経由で実行、npm/npx を決め打ちしない」を横断追加（3ファイル整合）。(3)testing/debugging/
   architecture/security の決め打ちコマンドを対応表参照の中立表現へ。コード例（コンパイル対象）は不変なので
   ハーネス再実行は不要（プロース/表のみ）。
+- ラウンド11で**横断能力の穴埋め①②**（新ドメイン追加ではなく、コーディングエージェントの振る舞い強化）:
+  - **①「検証できない環境」を主経路化**: 完了条件が「回せなければ未検証で終える」の二値だったのを、
+    **検証の梯子**（①既存 scripts を PM 経由 → ②lockfile ありで導入可能なら固定 install→型/build →
+    ③install 不可なら型チェック単独 → ④静的照合〔使う API の実型を import 元で読む・import 解決・境界の
+    認可/検証を目視・版依存は公式裏取り〕）へ格上げ。`node_modules` 不在の新規クローンが既定であることを踏まえ
+    「未検証で丸めない／検証済みと未検証を分けて具体的に報告」を明文化（checklist に梯子・agent/SKILL に要約）。
+  - **②エラーと耐障害性を5軸の抜けとして補完**: 「失敗を種類で分ける」原則（予期される失敗＝typed 返却/4xx、
+    予期しない失敗＝握り潰さず throw→最寄り `error.tsx`／root は `global-error.tsx`。`notFound()`/`redirect()`
+    は try/catch の外）＋観測性（`instrumentation.ts` の `onRequestError`・構造化ログ・PII/秘密を出さない）を
+    architecture に新節、patterns §7 を **error/global-error/not-found/instrumentation の4例をコンパイル済み**へ拡張、
+    checklist・agent・SKILL に不変則を横断追加。ハーネスに `global-error.tsx`/`not-found.tsx`/`instrumentation.ts`
+    を追加し **next build＋tsc --strict＋vitest 緑を確認**（`onRequestError` は `next` の `Instrumentation` 型で裏取り）。
 
 ## Git / ブランチ
 
