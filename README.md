@@ -51,6 +51,14 @@ cd verification && bash run.sh   # next build（面の通し検証）+ tsc --str
 `references/*` のコード例を変えたら `verification/app` / `verification/runtime` に反映して緑にしてから
 コミットする運用です。典型依頼の期待は `verification/eval-set.md`（回帰ルーブリック）にまとめています。
 
+さらに **`verification-next15/`**（姉妹ハーネス）で、対象が **Next 15** のときに版差
+（`middleware.ts`←→`proxy.ts` の改名前・非同期リクエストAPI・`'use cache'` 非使用）へ合わせた出力が
+実ビルドできることを固定しています（`cd verification-next15 && bash run.sh`）。実行時フットガン（zod 等）は
+版非依存のため 16 ハーネスに集約しています。
+
+> エージェント（`nextjs-builder`）は `WebSearch` / `WebFetch` を持ち、**版依存の挙動・API・既知脆弱性を
+> 記憶で断定せず該当バージョンの公式で裏取り**します（web が使えない環境ではその旨を明示）。
+
 ## 使い方
 
 このリポジトリ（または `.claude/` をコピーした任意のプロジェクト）を Claude Code で開き、

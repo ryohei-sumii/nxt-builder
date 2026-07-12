@@ -1,0 +1,7 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+package-lock.json
+# Next が build 時に生成（.next/types を参照するため、typecheck は build 後に走らせる）
+next-env.d.ts
