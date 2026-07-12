@@ -29,6 +29,9 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
      PM は **lockfile と `package.json` の `packageManager` から特定**し、install/build/test/lint/codemod
      などの**コマンドは必ずその PM 経由で実行**する（`npm`/`npx` を決め打ちしない。セキュリティ方針で
      npm 禁止の組織あり）。PM 別のコマンド対応表は `references/libraries.md`。
+   - **探索は入口から辿る（大きいリポで over-read しない）**: 全体を頭から読まず、`Grep` でシンボル/文字列から
+     入口（該当ルート・型・エクスポート・呼び出し元）を当て、型 → データ層 → 近接ファイルへ依存を辿って
+     必要分だけ読む。変更前に**影響範囲**（利用箇所）を `Grep` で洗う。根拠は `path:line` で示す。
 3. **実装** は該当種別の手順と下記チェックリスト（`references/checklist.md`）を満たす。
 4. **セルフレビュー（完了条件）** — 5軸チェックリスト（`references/checklist.md`）で確認。コードを生成/
    変更したら型チェック（`tsc --noEmit` 相当）/ビルド（あればテスト）を実行し**緑まで完了としない**。

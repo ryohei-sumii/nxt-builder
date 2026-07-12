@@ -125,6 +125,17 @@ README.md                             # 構成と使い方
     architecture に新節、patterns §7 を **error/global-error/not-found/instrumentation の4例をコンパイル済み**へ拡張、
     checklist・agent・SKILL に不変則を横断追加。ハーネスに `global-error.tsx`/`not-found.tsx`/`instrumentation.ts`
     を追加し **next build＋tsc --strict＋vitest 緑を確認**（`onRequestError` は `next` の `Instrumentation` 型で裏取り）。
+- ラウンド12で**横断能力の穴埋め③④**:
+  - **③テストの層を一段深く**（`testing.md` 49行が薄かった）: **Route Handler テスト**（`Request` を渡し
+    `status`/`json` を検証・`vi.hoisted` で auth/データ層をモック・認可を通らない経路がデータ層に到達しないこと
+    を確認）、**外部サービスのモック**（`fetch` は `vi.stubGlobal`、SDK/署名検証は `vi.mock`。実疎通は E2E へ隔離）、
+    **カバレッジ方針**（認可→検証→金銭/破壊/冪等→回帰を厚く、自明は追わない・境界値と異常系・決定性）、
+    **テスト基盤が無い時の判断**（Vitest 最小提案・重い基盤は着手前に確認）を追加。Route Handler 例は
+    ハーネス `runtime/route-handler.test.ts` で**実行して裏取り**（server-only 込みで vitest 緑）。
+  - **④探索プロトコル**（大規模リポで over-read/迷子にしない）: 「入口から辿る」手順（`Grep` で入口を当て →
+    型→データ層→近接へ依存を辿り必要分だけ読む・変更前に影響範囲を `Grep`・根拠は `path:line`）を
+    agent と SKILL の調査ステップに追加（3ファイル整合）。nextjs-builder は Agent ツールを持たない前提でサブ
+    エージェントには触れない。
 
 ## Git / ブランチ
 
