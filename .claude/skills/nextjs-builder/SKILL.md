@@ -120,5 +120,8 @@ Next.js **App Router + TypeScript** のコードを 5軸で最適化するため
 - **失敗は種類で扱い分ける**: 予期される失敗＝typed 返却/適切な 4xx、予期しない失敗＝握り潰さず throw して
   最寄りの `error.tsx`（root は `global-error.tsx`）へ。`notFound()`/`redirect()` は `try/catch` の外で呼ぶ。
 - `dangerouslySetInnerHTML` / 文字列連結SQL / `any` を避ける。
+- **スキーマ変更は既存ツールのマイグレーション経由**（生成物をレビュー・手で本番を叩かない）、破壊的変更は
+  expand-contract で段階移行（`references/data-access.md`）。**新規依存はサプライチェーン手順**で名前の実在/
+  正規性を照合し固定＋監査（`references/libraries.md`）。重大・不可逆な選定と新規依存は着手前に確認。
 - 生成コードは**完全に動く**ものにする。`// ...` で省略しない。**型チェック/ビルド（あればテスト）を
   実行して緑を確認するまで完了としない**（回せない環境なら未検証と明示する）。

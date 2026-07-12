@@ -136,6 +136,18 @@ README.md                             # 構成と使い方
     型→データ層→近接へ依存を辿り必要分だけ読む・変更前に影響範囲を `Grep`・根拠は `path:line`）を
     agent と SKILL の調査ステップに追加（3ファイル整合）。nextjs-builder は Agent ツールを持たない前提でサブ
     エージェントには触れない。
+- ラウンド13で**横断能力の穴埋め⑤⑥**（残候補）:
+  - **⑤DBマイグレーション規律**（`data-access.md` は ORM 最適化まではあったが空白）: スキーマは既存ツール
+    （Prisma Migrate / drizzle-kit / 生 SQL / Atlas）のマイグレーション経由でのみ変更・生成物をレビュー・
+    手で本番 DB を叩かない。**破壊的変更は expand-contract（追加→二重書き込み/バックフィル→切替→削除）で
+    無停止化**、drop/型変更等の不可逆操作は着手前確認、データ移行は DDL と分けて冪等に。data-access に新節＋
+    チェック、agent/SKILL/checklist に不変則を横断追加。
+  - **⑥依存追加のサプライチェーン手順化**（`libraries.md` の1箇条を手順へ昇格）: 入れる前（名前の実在/正規性
+    照合〔typo/slopsquat〕・provenance/DL/メンテ・ライセンス・重量）／入れる（PM 経由・版固定・lockfile
+    コミット・postinstall は `--ignore-scripts`/allowlist 検討）／入れた後（PM 別 audit・Dependabot/Renovate・
+    重大選定と新規依存は着手前確認）に整理。既存の選定チェック箇条は簡潔化し新節へ集約。
+  - いずれも**プロセス/規律**でコンパイル対象のコード例を含まないため、ハーネス再実行は不要（doc のみ・
+    相互参照とコードフェンス均衡を確認）。
 
 ## Git / ブランチ
 

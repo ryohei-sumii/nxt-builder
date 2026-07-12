@@ -109,12 +109,14 @@ Cache Components の `'use cache'`・`middleware.ts` → `proxy.ts` 改名）。
 - **パフォーマンス**: クライアントバンドル最小化（重い依存はサーバー or `next/dynamic`）、
   `next/image`・`next/font`、`<Suspense>` ストリーミング、`useEffect` 取得を避けサーバー寄せ
   （`references/performance.md`）。
-- **データ/クラウド**: 取得・認可・ORM は `lib/data` の **DAL** に集約、必要列 select＋DTO
-  （`references/data-access.md`）。Webhook は生ボディ＋定数時間比較で署名検証、`force-dynamic`、
-  速く ACK・重い処理は `after()`/キュー、冪等性。大きいファイルは presigned URL 直送
-  （`references/cloud-webhooks.md`）。
+- **データ/クラウド**: 取得・認可・ORM は `lib/data` の **DAL** に集約、必要列 select＋DTO。
+  **スキーマ変更は既存ツールのマイグレーション経由**（生成物をレビュー・手で本番 DB を叩かない）、
+  破壊的変更は expand-contract の段階移行で無停止化し不可逆操作は着手前に確認（`references/data-access.md`）。
+  Webhook は生ボディ＋定数時間比較で署名検証、`force-dynamic`、速く ACK・重い処理は `after()`/キュー、
+  冪等性。大きいファイルは presigned URL 直送（`references/cloud-webhooks.md`）。
 - **ライブラリ/選定**: 既存の選択は尊重、新規/不在なら標準機能で足りるか確認のうえ 5軸で選定し
   **理由を添える**。重大・不可逆な選定（DB/ORM/認証/デプロイ）と新規依存は**着手前に確認**。
+  **新規依存はサプライチェーン手順**（名前の実在/正規性を照合〔typo/slopsquat〕・固定・監査）で確かめる。
   検証は境界で `safeParse`・型は `z.infer`（`references/libraries.md` / `stack-selection.md`）。
 - **可読性/SOLID**: 1 コンポーネント1責任 (SRP)、props 最小 (ISP)、抽象（型）に依存させ差し替え可能に (DIP)。
   命名で意図を語り、コメントは「なぜ」。`any` を避け `unknown`＋絞り込み、マジック値は定数化、
