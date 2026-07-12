@@ -100,8 +100,9 @@ README.md                             # 構成と使い方
 ## Git / ブランチ
 
 - 開発ブランチ: **`claude/nextjs-builder-agent-i6m54v`**（このブランチで作業・コミット・プッシュ）。
-- 現状このブランチが**リポジトリの唯一かつデフォルトブランチ**。別ベースが無いため PR は
-  base=head になり作成不可（作業は実質本線）。PR フローが要るならベースブランチの用意が必要。
+  origin のデフォルトブランチもこれ。
+- `main` ブランチも存在し、**現在は開発ブランチと同一コミットに同期**している。PR フローが要るなら
+  base=`main` で出せる。開発ブランチへ push した後、`main` を fast-forward で追随させて揃える運用。
 - コミット: 明確なメッセージ。フッタは `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
   と `Claude-Session: ...` を付ける（コミット/PR 等に model 識別子は入れない）。
 - push は `git push -u origin claude/nextjs-builder-agent-i6m54v`。ネットワーク失敗時は指数バックオフで再試行。
